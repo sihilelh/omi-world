@@ -1,0 +1,21 @@
+{
+  "name": "card-game",
+  "version": "1.0.0",
+  "description": "A simple card game",
+  "author": "SihilelH",
+  "license": "ISC",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "type-check": "turbo type-check"
+  },
+  "packageManager": "pnpm@10.12.4",
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "turbo": "^2.5.4"
+  },
+  "workspaces": [
+    "cdk",
+    "app"
+  ]
+}

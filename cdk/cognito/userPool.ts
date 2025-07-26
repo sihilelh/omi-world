@@ -2,6 +2,7 @@ import { CfnOutput, Stack } from "aws-cdk-lib";
 import {
   AccountRecovery,
   CfnUserPoolGroup,
+  CfnUserPoolDomain,
   UserPool,
   UserPoolClient,
   VerificationEmailStyle,
@@ -11,6 +12,9 @@ export class CreateUserPool {
   constructor(scope: Stack) {
     // User Pool
     const userPool = this.createUserPools(scope);
+
+    // User Pool Domain
+    this.createUserPoolDomain(scope, userPool);
 
     // User Pool Client
     const userPoolClient = this.createUserClient(scope, userPool);
@@ -24,9 +28,10 @@ export class CreateUserPool {
       value: userPoolClient.userPoolClientId,
     });
   }
+
   private createUserPools(stack: Stack) {
     return new UserPool(stack, "OmiUserPool", {
-      userPoolName: "OmiUsers",
+      userPoolName: "OmiWorldUsers",
       signInAliases: {
         email: true,
         username: true,
@@ -40,34 +45,43 @@ export class CreateUserPool {
       selfSignUpEnabled: true,
       userVerification: {
         emailStyle: VerificationEmailStyle.LINK,
-        emailSubject: `Welcome to OmiApp`,
+        emailSubject: `Welcome to OmiWorld`,
         emailBody: [
           "Hello {username},",
-          "Thank you for signing up for OmiApp!",
+          "Thank you for signing up for OmiWorld!",
           "Please verify your email address by clicking the link below:\n{##Verify Email##}",
           "If you did not request this, please ignore this email.",
           "Best regards,",
-          "The OmiApp Team",
+          "The OmiWorld Team",
         ].join("\n\n"),
       },
       accountRecovery: AccountRecovery.EMAIL_ONLY,
     });
   }
+
+  private createUserPoolDomain(stack: Stack, userPool: UserPool) {
+    return new CfnUserPoolDomain(stack, "OmiWorldDomain", {
+      domain: "omiworld",
+      userPoolId: userPool.userPoolId,
+    });
+  }
+
   private createUserClient(stack: Stack, userPool: UserPool) {
     return new UserPoolClient(stack, "OmiUserPoolClient", {
       userPool,
-      userPoolClientName: "OmiAppClient",
+      userPoolClientName: "OmiWorldClient",
       authFlows: {
         userPassword: true,
         userSrp: true,
       },
     });
   }
+
   private createUserGroup(stack: Stack, userPool: UserPool) {
     return new CfnUserPoolGroup(stack, "OmiPlayersGroup", {
       groupName: "OmiPlayers",
       userPoolId: userPool.userPoolId,
-      description: "Omi App Players",
+      description: "OmiWorld App Players",
     });
   }
 }

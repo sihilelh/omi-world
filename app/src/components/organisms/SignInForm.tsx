@@ -91,7 +91,7 @@ export const SignInForm = () => {
 
       <div className="flex items-center justify-between">
         <Link
-          to="/auth/forgot-password"
+          to="/forgot-password"
           className="text-sm text-red-400 hover:text-red-300 transition-colors"
         >
           Forgot password?
@@ -110,7 +110,7 @@ export const SignInForm = () => {
       <div className="text-center text-sm text-gray-400">
         Don't have an account?{" "}
         <Link
-          to="/auth/signup"
+          to="/signup"
           className="text-red-400 hover:text-red-300 transition-colors"
         >
           Sign up

@@ -103,7 +103,7 @@ export const SignUpForm = () => {
       });
       
       if (result.success) {
-        navigate("/auth/signin");
+        navigate("/signin");
       }
     } catch (error) {
       // Error is handled by useAuth hook
@@ -184,7 +184,7 @@ export const SignUpForm = () => {
       <div className="text-center text-sm text-gray-400">
         Already have an account?{" "}
         <Link
-          to="/auth/signin"
+          to="/signin"
           className="text-red-400 hover:text-red-300 transition-colors"
         >
           Sign in

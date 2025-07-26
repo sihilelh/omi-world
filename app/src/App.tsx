@@ -10,24 +10,16 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Auth Routes */}
-        <Route path="/auth/signin" element={<SignInPage />} />
-        <Route path="/auth/signup" element={<SignUpPage />} />
-        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-        
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
         {/* Protected Routes */}
-        <Route 
-          path="/lobby" 
-          element={
-            <ProtectedRoute>
-              <LobbyPage />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Redirects */}
-        <Route path="/" element={<Navigate to="/auth/signin" replace />} />
-        <Route path="/sign-in" element={<Navigate to="/auth/signin" replace />} />
-        <Route path="*" element={<Navigate to="/auth/signin" replace />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/lobby" element={<LobbyPage />} />
+          <Route path="/" element={<Navigate to="/lobby" replace />} />
+          <Route path="*" element={<Navigate to="/lobby" replace />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

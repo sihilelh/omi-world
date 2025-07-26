@@ -125,7 +125,7 @@ export const ForgotPasswordForm = () => {
       
       if (result.success) {
         // Redirect to sign in page
-        window.location.href = "/auth/signin";
+        window.location.href = "/signin";
       }
     } catch (error) {
       // Error is handled by useAuth hook
@@ -167,7 +167,7 @@ export const ForgotPasswordForm = () => {
         <div className="text-center text-sm text-gray-400">
           Remember your password?{" "}
           <Link
-            to="/auth/signin"
+            to="/signin"
             className="text-red-400 hover:text-red-300 transition-colors"
           >
             Sign in

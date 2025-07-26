@@ -1,18 +1,14 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+export const ProtectedRoute = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/auth/signin");
+      navigate("/signin");
     }
   }, [user, loading, navigate]);
 
@@ -31,5 +27,5 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return null; // Will redirect in useEffect
   }
 
-  return <>{children}</>;
+  return <Outlet />;
 }; 

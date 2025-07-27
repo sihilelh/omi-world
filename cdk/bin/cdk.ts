@@ -6,7 +6,8 @@ import { RouteStack } from "../lib/route-stack";
 const app = new cdk.App();
 
 // Handles Cognito and Dynamo DB related things
-new CommonStack(app, "CommonStack");
+const commonStack = new CommonStack(app, "CommonStack");
 
 // Handles API Gateway and Lambda Functions
-new RouteStack(app, "RouteStack");
+const routeStack = new RouteStack(app, "RouteStack", commonStack);
+routeStack.addDependency(commonStack);

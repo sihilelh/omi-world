@@ -9,6 +9,9 @@ import {
 } from "aws-cdk-lib/aws-cognito";
 
 export class CreateUserPool {
+  public readonly userPoolId: string;
+  public readonly userPoolClientId: string;
+
   constructor(scope: Stack) {
     // User Pool
     const userPool = this.createUserPools(scope);
@@ -22,10 +25,18 @@ export class CreateUserPool {
     // User Pool Groups
     this.createUserGroup(scope, userPool);
 
+    // Store the IDs
+    this.userPoolId = userPool.userPoolId;
+    this.userPoolClientId = userPoolClient.userPoolClientId;
+
     // Outputs
-    new CfnOutput(scope, "UserPoolId", { value: userPool.userPoolId });
+    new CfnOutput(scope, "UserPoolId", { 
+      value: userPool.userPoolId,
+      exportName: "CommonStack-UserPoolId"
+    });
     new CfnOutput(scope, "UserPoolClientId", {
       value: userPoolClient.userPoolClientId,
+      exportName: "CommonStack-UserPoolClientId"
     });
   }
 

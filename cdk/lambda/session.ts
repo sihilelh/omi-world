@@ -3,7 +3,11 @@ import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import { verifyCognitoToken } from "../utils/auth.util";
 import { CognitoAccessTokenPayload } from "aws-jwt-verify/jwt-model";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { cb, cbError } from "../utils/cb.util";
 
 const dynamoDBClient = new DynamoDBClient({});
@@ -30,14 +34,20 @@ export const handler = async (
     });
 
     switch (httpMethod) {
+      case "GET":
+        console.log("GET request received, proceeding to get session");
+        return await getSession(event);
       case "POST":
         console.log("POST request received, proceeding to create session");
         return await createSession(event);
+      case "PUT":
+        console.log("PUT request received, proceeding to join session");
+        return await joinSession(event);
       default:
         return cb(405, {
           error: "Method Not Allowed",
           message: `HTTP method ${httpMethod} not supported`,
-          allowedMethods: ["POST"],
+          allowedMethods: ["POST", "PUT"],
         });
     }
   } catch (error) {
@@ -134,5 +144,143 @@ const createSession = async (
   } catch (error) {
     console.log(`Error creating session:`, error);
     return cbError(500, { error: "Failed to create session" }, { error });
+  }
+};
+
+const joinSession = async (
+  event: APIGatewayProxyEventV2
+): Promise<APIGatewayProxyResultV2> => {
+  try {
+    const sessionId = event.pathParameters?.sessionId;
+
+    if (!sessionId) {
+      return cb(400, { error: "Session ID is required" });
+    }
+
+    const body = JSON.parse(event.body || "{}");
+
+    if (!body?.token) {
+      return cb(401, { error: "Unauthorized: Please provide a access token" });
+    }
+
+    if (!body?.team) {
+      return cb(400, { error: "Team is required" });
+    }
+
+    // Check if the provided team is valid
+    const validTeams = ["TEAM_1", "TEAM_2"];
+    if (!validTeams.includes(body.team)) {
+      return cb(400, { error: "Invalid team" });
+    }
+
+    const user: CognitoAccessTokenPayload | null = await verifyCognitoToken(
+      body.token
+    );
+
+    if (!user) {
+      return cb(401, { error: "Unauthorized: Please access token is invalid" });
+    }
+
+    const joiningUser = user.username;
+
+    const sessionData = await docClient.send(
+      new GetCommand({
+        TableName: SESSIONS_TABLE,
+        Key: { pk: sessionId },
+      })
+    );
+
+    if (!sessionData.Item) {
+      return cb(404, { error: "Session not found" });
+    }
+
+    const session = sessionData.Item;
+
+    if (session.status !== "active") {
+      return cb(400, { error: "Session is not active" });
+    }
+
+    // Each team only can have 2 players and total players in a session is 4
+
+    // Validate total players in session
+    if (Array.isArray(session.players)) {
+      if (session.players.length >= 4) {
+        return cb(400, {
+          error: "Session is full. Maximum 4 players allowed.",
+        });
+      }
+    } else {
+      session.players = [];
+    }
+
+    // Validate team size
+    const teamPlayers = session.players.filter(
+      (p: any) => p.team === body.team
+    );
+    if (teamPlayers.length >= 2) {
+      return cb(400, {
+        error: `Team ${body.team} is full. Maximum 2 players per team.`,
+      });
+    }
+
+    // Prevent duplicate join
+    if (session.players.some((p: any) => p.userId === joiningUser)) {
+      return cb(400, { error: "User already joined the session." });
+    }
+
+    // Update session data
+    session.players.push({
+      userId: joiningUser,
+      team: body.team,
+    });
+
+    await docClient.send(
+      new PutCommand({
+        TableName: SESSIONS_TABLE,
+        Item: session,
+      })
+    );
+
+    // TODO: Send a websocket message to all players in the session
+
+    return cb(200, {
+      message: "Session joined",
+      sessionId,
+      sessionData: session,
+    });
+  } catch (error) {
+    console.log(`Error joining session:`, error);
+    return cbError(500, { error: "Failed to join session" }, { error });
+  }
+};
+
+const getSession = async (
+  event: APIGatewayProxyEventV2
+): Promise<APIGatewayProxyResultV2> => {
+  try {
+    const sessionId = event.pathParameters?.sessionId;
+
+    if (!sessionId) {
+      return cb(400, { error: "Session ID is required" });
+    }
+    // Fetch the session from DynamoDB
+    const result = await docClient.send(
+      new GetCommand({
+        TableName: SESSIONS_TABLE,
+        Key: { pk: sessionId },
+      })
+    );
+
+    if (!result.Item) {
+      return cb(404, { error: "Session not found" });
+    }
+
+    return cb(200, {
+      sessionId,
+      sessionData: result.Item,
+    });
+  } catch (error) {
+    console.log(`Error getting session:`, error);
+    return cbError(500, { error: "Failed to get session" }, { error });
   }
 };

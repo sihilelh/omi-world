@@ -79,6 +79,12 @@ export class RouteStack extends Stack {
         methods: [HttpMethod.POST],
         fn: sessionLambda,
       },
+      {
+        name: "SessionLambda",
+        path: "/sessions/{sessionId}",
+        methods: [HttpMethod.PUT, HttpMethod.GET],
+        fn: sessionLambda,
+      },
     ];
 
     return lambdaRoutes;

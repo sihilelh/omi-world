@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@layer base {
+  html {
+    font-family: 'Cinzel', serif;
+  }
+}
+
 body {
   @apply bg-neutral-900 text-white;
 }

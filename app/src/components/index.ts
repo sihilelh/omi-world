@@ -11,6 +11,7 @@ export { AuthHeader } from "./molecules/AuthHeader";
 export { NavBar } from "./molecules/NavBar";
 export { CardTable } from "./molecules/CardTable";
 export { LobbyContent } from "./molecules/LobbyContent";
+export { JoinSessionDialog } from "./molecules/SessionIdDialog";
 
 // Organisms
 export { SignInForm } from "./organisms/SignInForm";
@@ -18,4 +19,4 @@ export { SignUpForm } from "./organisms/SignUpForm";
 export { ForgotPasswordForm } from "./organisms/ForgotPasswordForm";
 
 // Other
-export { ProtectedRoute } from "./ProtectedRoute"; 
+export { ProtectedRoute } from "./ProtectedRoute";

@@ -35,11 +35,21 @@ export const createSession = async () => {
   }
 };
 
-export const joinSession = async (sessionId: string) => {
+export const joinSession = async (sessionId: string, team?: string) => {
   try {
-    const response = await api.put(`/sessions/${sessionId}`);
-    return response.data;
+    const payload = team ? { team } : {};
+    const response = await api.put(`/sessions/${sessionId}`, payload);
+    return response.data as CreateSessionResponse;
   } catch (error) {
     toast.error("Failed to join session");
+  }
+};
+
+export const getSession = async (sessionId: string) => {
+  try {
+    const response = await api.get(`/sessions/${sessionId}`);
+    return response.data;
+  } catch (error) {
+    toast.error("Failed to get session");
   }
 };

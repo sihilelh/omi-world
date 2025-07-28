@@ -1,16 +1,25 @@
+import { useState } from "react";
 import { NavBar } from "../components/molecules/NavBar";
 import { CardTable } from "../components/molecules/CardTable";
 import { LobbyContent } from "../components/molecules/LobbyContent";
-import { createSession } from "../services/session.service";
+import { JoinSessionDialog } from "../components/molecules/SessionIdDialog";
+import { useGameSession } from "../hooks/useGameSession";
 
 export const LobbyPage = () => {
-  const handleCreateGame = () => {
-    createSession();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { createGameSession, joinGameSession, loading } = useGameSession();
+
+  const handleCreateGame = async () => {
+    await createGameSession();
   };
 
   const handleJoinGame = () => {
-    // TODO: Implement join game functionality
-    console.log("Join game clicked");
+    setIsDialogOpen(true);
+  };
+
+  const handleJoinSession = async (sessionId: string, team: string) => {
+    await joinGameSession(sessionId, team);
+    setIsDialogOpen(false);
   };
 
   return (
@@ -21,9 +30,16 @@ export const LobbyPage = () => {
           <LobbyContent
             onCreateGame={handleCreateGame}
             onJoinGame={handleJoinGame}
+            loading={loading}
           />
         </CardTable>
       </main>
+      <JoinSessionDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onSubmit={handleJoinSession}
+        loading={loading}
+      />
     </>
   );
 };

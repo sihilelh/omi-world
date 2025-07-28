@@ -4,9 +4,14 @@ import { Button } from "../atoms/Button";
 interface LobbyContentProps {
   onCreateGame: () => void;
   onJoinGame: () => void;
+  loading?: boolean;
 }
 
-export const LobbyContent = ({ onCreateGame, onJoinGame }: LobbyContentProps) => {
+export const LobbyContent = ({
+  onCreateGame,
+  onJoinGame,
+  loading,
+}: LobbyContentProps) => {
   return (
     <div className="text-center w-[90%]">
       <div className="flex items-center justify-center mb-4">
@@ -17,13 +22,13 @@ export const LobbyContent = ({ onCreateGame, onJoinGame }: LobbyContentProps) =>
       </div>
       <div>Please create a session or join an existing one.</div>
       <div className="flex items-center justify-center mt-4 gap-2">
-        <Button variant="primary" onClick={onCreateGame}>
+        <Button variant="primary" onClick={onCreateGame} loading={loading}>
           Create A Game
         </Button>
-        <Button variant="secondary" onClick={onJoinGame}>
+        <Button variant="secondary" onClick={onJoinGame} disabled={loading}>
           Join A Game
         </Button>
       </div>
     </div>
   );
-}; 
+};

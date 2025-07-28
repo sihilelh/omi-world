@@ -107,7 +107,7 @@ export const SignInForm = () => {
         Sign In
       </Button>
 
-      <div className="text-center text-sm text-gray-400">
+      <div className="text-center text-sm text-neutral-400">
         Don't have an account?{" "}
         <Link
           to="/signup"

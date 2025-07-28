@@ -162,7 +162,7 @@ export const SignUpForm = () => {
         autoComplete="new-password"
       />
 
-      <div className="text-xs text-gray-400 space-y-1">
+      <div className="text-xs text-neutral-400 space-y-1">
         <p>Password requirements:</p>
         <ul className="list-disc list-inside space-y-1">
           <li>At least 8 characters long</li>
@@ -181,7 +181,7 @@ export const SignUpForm = () => {
         Create Account
       </Button>
 
-      <div className="text-center text-sm text-gray-400">
+      <div className="text-center text-sm text-neutral-400">
         Already have an account?{" "}
         <Link
           to="/signin"

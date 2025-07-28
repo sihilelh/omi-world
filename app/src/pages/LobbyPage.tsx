@@ -13,18 +13,18 @@ export const LobbyPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-neutral-900 flex items-center justify-center px-4">
       <div className="w-full max-w-2xl">
-        <div className="bg-gray-800 rounded-lg shadow-xl p-8">
+        <div className="bg-neutral-800 rounded-lg shadow-xl p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Welcome to the Lobby</h1>
-            <p className="text-gray-400">You're successfully signed in!</p>
+            <p className="text-neutral-400">You're successfully signed in!</p>
           </div>
 
           {user && (
-            <div className="bg-gray-700 rounded-lg p-6 mb-6">
+            <div className="bg-neutral-700 rounded-lg p-6 mb-6">
               <h2 className="text-xl font-semibold text-white mb-4">User Details</h2>
-              <div className="space-y-3 text-gray-300">
+              <div className="space-y-3 text-neutral-300">
                 <div className="flex justify-between">
                   <span className="font-medium">User ID:</span>
                   <span className="font-mono text-sm">{user.userId}</span>

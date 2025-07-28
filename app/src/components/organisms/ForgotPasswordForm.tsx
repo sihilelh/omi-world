@@ -164,7 +164,7 @@ export const ForgotPasswordForm = () => {
           Send Reset Code
         </Button>
 
-        <div className="text-center text-sm text-gray-400">
+        <div className="text-center text-sm text-neutral-400">
           Remember your password?{" "}
           <Link
             to="/signin"
@@ -209,7 +209,7 @@ export const ForgotPasswordForm = () => {
         autoComplete="new-password"
       />
 
-      <div className="text-xs text-gray-400 space-y-1">
+      <div className="text-xs text-neutral-400 space-y-1">
         <p>Password requirements:</p>
         <ul className="list-disc list-inside space-y-1">
           <li>At least 8 characters long</li>
@@ -228,7 +228,7 @@ export const ForgotPasswordForm = () => {
         Reset Password
       </Button>
 
-      <div className="text-center text-sm text-gray-400">
+      <div className="text-center text-sm text-neutral-400">
         <button
           type="button"
           onClick={() => setStep("email")}

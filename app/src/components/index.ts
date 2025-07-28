@@ -16,7 +16,6 @@ export { LobbyContent } from "./molecules/LobbyContent";
 export { SignInForm } from "./organisms/SignInForm";
 export { SignUpForm } from "./organisms/SignUpForm";
 export { ForgotPasswordForm } from "./organisms/ForgotPasswordForm";
-export { LobbyPage } from "./organisms/LobbyPage";
 
 // Other
 export { ProtectedRoute } from "./ProtectedRoute"; 

@@ -201,7 +201,10 @@ export const PlayCard: React.FC<PlayCardProps> = ({
   };
 
   return (
-    <div className={`relative ${sizes[size]} ${className}`} style={{ perspective: "1000px" }}>
+    <div
+      className={`relative ${sizes[size]} ${className}`}
+      style={{ perspective: "1000px" }}
+    >
       <motion.div
         className="w-full h-full"
         animate={isFlipped ? "back" : "front"}

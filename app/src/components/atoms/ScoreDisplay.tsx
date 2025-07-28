@@ -1,16 +1,17 @@
 interface ScoreDisplayProps {
-  redTeam?: number;
-  blueTeam?: number;
+  redScore: number;
+  blackScore: number;
+  className?: string;
 }
 
-export const ScoreDisplay = ({ redTeam = 0, blueTeam = 0 }: ScoreDisplayProps) => {
+export const ScoreDisplay = ({ redScore, blackScore, className = "" }: ScoreDisplayProps) => {
   return (
-    <div className="flex items-center gap-2 p-2 bg-neutral-800 rounded-full">
-      <div className="bg-red-700 size-10 rounded-full flex items-center justify-center font-bold border-2 border-white">
-        {redTeam}
+    <div className={`bg-neutral-800 p-2 flex gap-2 rounded-full ${className}`}>
+      <div className="w-8 h-8 bg-red-600 border-2 border-white rounded-full flex items-center justify-center font-bold">
+        {redScore}
       </div>
-      <div className="bg-black size-10 rounded-full flex items-center justify-center font-bold border-2 border-white">
-        {blueTeam}
+      <div className="w-8 h-8 bg-black border-2 border-white rounded-full flex items-center justify-center font-bold">
+        {blackScore}
       </div>
     </div>
   );

@@ -3,7 +3,9 @@ import { NavBar } from "../components/molecules/NavBar";
 import { useEffect } from "react";
 import { useSessionStore } from "../stores/sessionStore";
 import { getSession } from "../services/session.service";
+import { CardTable, ScoreDisplay, PlayerInfo, PlayerHand } from "../components";
 import { PlayCard } from "../components/atoms/PlayCard";
+import { SuitOutline } from "../components/atoms/SuitOutline";
 
 export const GamePage = () => {
   const { sessionId } = useParams();
@@ -24,7 +26,90 @@ export const GamePage = () => {
     <>
       <NavBar />
       <main className="h-[calc(100vh-5rem)] mt-20 relative flex items-center justify-center">
-      
+        {/* Scores  */}
+        <div className="absolute right-8 top-4">
+          <ScoreDisplay redScore={10} blackScore={10} />
+        </div>
+
+        {/* Other Players  */}
+        {/* Top Player  */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2">
+          <PlayerInfo
+            name="sihilelh"
+            cardCount={8}
+            teamColor="red"
+            position="top"
+          />
+        </div>
+
+        {/* Left Player  */}
+        <div className="absolute top-1/2 left-8 -translate-y-1/2">
+          <PlayerInfo
+            name="jhon"
+            cardCount={8}
+            teamColor="black"
+            position="left"
+          />
+        </div>
+
+        {/* Right Player  */}
+        <div className="absolute top-1/2 right-8 -translate-y-1/2">
+          <PlayerInfo
+            name="jane"
+            cardCount={8}
+            teamColor="black"
+            position="right"
+          />
+        </div>
+
+        <CardTable>
+          <div className="w-full h-full relative">
+            {/* Top Players Table Card  */}
+            <div className="absolute top-8 left-1/2 -translate-x-1/2">
+              <PlayCard cardType="CLUBS_8" size="sm" />
+            </div>
+
+            {/* Right Players Table Card  */}
+            <div className="absolute right-8 top-1/2 -translate-y-1/2">
+              <PlayCard cardType="CLUBS_7" size="sm" />
+            </div>
+
+            {/* Left Players Table Card  */}
+            <div className="absolute left-8 top-1/2 -translate-y-1/2">
+              <PlayCard cardType="CLUBS_7" size="sm" />
+            </div>
+
+            {/* Bottom Players Table Card  */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+              <PlayCard cardType="CLUBS_7" size="sm" />
+            </div>
+
+            {/* This Round's Selected Suit  */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <SuitOutline suitType="CLUBS" />
+            </div>
+          </div>
+        </CardTable>
+
+        <div className="absolute bottom-4">
+          <PlayerHand
+            cards={[
+              { cardType: "CLUBS_QUEEN", disabled: true },
+              { cardType: "HEARTS_10" },
+              { cardType: "SPADES_ACE" },
+              { cardType: "DIAMONDS_9" },
+              { cardType: "CLUBS_7" },
+              { cardType: "HEARTS_KING" },
+              { cardType: "SPADES_9" },
+              { cardType: "DIAMONDS_JACK" },
+            ]}
+            onCardClick={(cardType) => {
+              console.log("Card clicked:", cardType);
+              // Handle card selection logic here
+            }}
+            className="flex items-center justify-center gap-4"
+          />
+        </div>
       </main>
     </>
   );

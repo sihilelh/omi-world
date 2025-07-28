@@ -4,6 +4,8 @@ export { Input } from "./atoms/Input";
 export { Label } from "./atoms/Label";
 export { Logo } from "./atoms/Logo";
 export { ScoreDisplay } from "./atoms/ScoreDisplay";
+export { PlayerInfo } from "./atoms/PlayerInfo";
+export { PlayerHand } from "./atoms/PlayerHand";
 
 // Molecules
 export { AuthField } from "./molecules/AuthField";

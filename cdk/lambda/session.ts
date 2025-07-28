@@ -1,6 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
-import { verifyCognitoToken } from "../utils/auth.util";
+import {
+  verifyCognitoToken,
+  extractTokenFromHeaders,
+} from "../utils/auth.util";
 import { CognitoAccessTokenPayload } from "aws-jwt-verify/jwt-model";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
@@ -9,7 +12,10 @@ import {
   PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { cb, cbError } from "../utils/cb.util";
-import { broadcastToSession, createUserJoinedMessage } from "../utils/websocket.util";
+import {
+  broadcastToSession,
+  createUserJoinedMessage,
+} from "../utils/websocket.util";
 
 const dynamoDBClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
@@ -76,16 +82,16 @@ const createSession = async (
 
     const sessionId = `${Date.now().toString(36)}`;
 
-    const body = JSON.parse(event.body || "{}");
-
-    if (!body?.token) {
+    // Get token from Authorization header
+    const token = extractTokenFromHeaders(event);
+    if (!token) {
       return cb(401, {
-        error: "Unauthorized: Please provide a access token",
+        error: "Unauthorized: Please provide an Authorization header",
       });
     }
 
     const user: CognitoAccessTokenPayload | null = await verifyCognitoToken(
-      body.token
+      token
     );
 
     if (!user) {
@@ -159,11 +165,15 @@ const joinSession = async (
       return cb(400, { error: "Session ID is required" });
     }
 
-    const body = JSON.parse(event.body || "{}");
-
-    if (!body?.token) {
-      return cb(401, { error: "Unauthorized: Please provide a access token" });
+    // Get token from Authorization header
+    const token = extractTokenFromHeaders(event);
+    if (!token) {
+      return cb(401, {
+        error: "Unauthorized: Please provide an Authorization header",
+      });
     }
+
+    const body = JSON.parse(event.body || "{}");
 
     if (!body?.team) {
       return cb(400, { error: "Team is required" });
@@ -176,7 +186,7 @@ const joinSession = async (
     }
 
     const user: CognitoAccessTokenPayload | null = await verifyCognitoToken(
-      body.token
+      token
     );
 
     if (!user) {
@@ -252,7 +262,11 @@ const joinSession = async (
           sessionId
         );
 
-        await broadcastToSession(sessionId, userJoinedMessage, WEBSOCKET_ENDPOINT);
+        await broadcastToSession(
+          sessionId,
+          userJoinedMessage,
+          WEBSOCKET_ENDPOINT
+        );
 
         console.log("Session Lambda - User joined broadcast sent:", {
           sessionId,

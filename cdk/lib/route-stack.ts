@@ -1,5 +1,9 @@
 import { App, CfnOutput, Stack, StackProps, Fn } from "aws-cdk-lib";
-import { HttpApi, HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
+import {
+  HttpApi,
+  HttpMethod,
+  CorsHttpMethod,
+} from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
@@ -22,8 +26,29 @@ export class RouteStack extends Stack {
   ) {
     super(scope, id, props);
 
-    // Initialize http api
-    this.httpApi = new HttpApi(this, "OmiApi");
+    // Initialize http api with CORS support
+    this.httpApi = new HttpApi(this, "OmiApi", {
+      corsPreflight: {
+        allowHeaders: [
+          "Content-Type",
+          "X-Amz-Date",
+          "Authorization",
+          "X-Api-Key",
+          "X-Amz-Security-Token",
+        ],
+        allowMethods: [
+          CorsHttpMethod.OPTIONS,
+          CorsHttpMethod.GET,
+          CorsHttpMethod.POST,
+          CorsHttpMethod.PUT,
+          CorsHttpMethod.DELETE,
+        ],
+        allowOrigins: [
+          "http://localhost:5173", // Vite dev server
+        ],
+        allowCredentials: true,
+      },
+    });
 
     // Initialize Lambda Functions
     const lambdaFunctions = this.initializeLambdaFunctions(this, commonStack);

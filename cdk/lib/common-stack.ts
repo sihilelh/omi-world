@@ -10,6 +10,7 @@ export class CommonStack extends Stack {
   public readonly sessionTable: TableV2;
   public readonly roundsTable: TableV2;
   public readonly movesTable: TableV2;
+  public readonly connectionsTable: TableV2;
 
   constructor(scope: App, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -26,5 +27,6 @@ export class CommonStack extends Stack {
     this.sessionTable = dynamoTables.sessionTable;
     this.roundsTable = dynamoTables.roundsTable;
     this.movesTable = dynamoTables.movesTable;
+    this.connectionsTable = dynamoTables.connectionsTable;
   }
 }

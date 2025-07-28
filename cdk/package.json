@@ -25,6 +25,7 @@
     "typescript": "~5.6.3"
   },
   "dependencies": {
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.0.0",
     "@aws-sdk/client-dynamodb": "^3.0.0",
     "@aws-sdk/lib-dynamodb": "^3.0.0",
     "aws-cdk-lib": "2.206.0",

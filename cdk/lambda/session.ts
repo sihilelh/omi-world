@@ -9,11 +9,13 @@ import {
   PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { cb, cbError } from "../utils/cb.util";
+import { broadcastToSession, createUserJoinedMessage } from "../utils/websocket.util";
 
 const dynamoDBClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
 
 const SESSIONS_TABLE = process.env.SESSIONS_TABLE_NAME || "OmiWorldSessions";
+const WEBSOCKET_ENDPOINT = process.env.WEBSOCKET_ENDPOINT;
 
 export const handler = async (
   event: APIGatewayProxyEventV2
@@ -241,7 +243,29 @@ const joinSession = async (
       })
     );
 
-    // TODO: Send a websocket message to all players in the session
+    // Broadcast user joined message to all session participants
+    if (WEBSOCKET_ENDPOINT) {
+      try {
+        const userJoinedMessage = createUserJoinedMessage(
+          joiningUser,
+          body.team,
+          sessionId
+        );
+
+        await broadcastToSession(sessionId, userJoinedMessage, WEBSOCKET_ENDPOINT);
+
+        console.log("Session Lambda - User joined broadcast sent:", {
+          sessionId,
+          userId: joiningUser,
+          team: body.team,
+        });
+      } catch (broadcastError) {
+        console.error("Session Lambda - Broadcast error:", broadcastError);
+        // Don't fail the join operation if broadcast fails
+      }
+    } else {
+      console.warn("Session Lambda - WebSocket endpoint not configured");
+    }
 
     return cb(200, {
       message: "Session joined",

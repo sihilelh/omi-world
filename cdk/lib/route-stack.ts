@@ -76,11 +76,20 @@ export class RouteStack extends Stack {
       },
     });
 
-    // Initialize Lambda Functions
-    const lambdaFunctions = this.initializeLambdaFunctions(this, commonStack);
+    // Initialize WebSocket Api first
+    const { webSocketApi, webSocketStage } = this.initializeWebSocketApi(
+      this,
+      commonStack
+    );
 
-    // Initilize WebSocket Api
-    this.initializeWebSocketApi(this, commonStack);
+    // Initialize Lambda Functions with WebSocket permissions
+    const lambdaFunctions = this.initializeLambdaFunctions(
+      this,
+      commonStack,
+      webSocketApi,
+      webSocketStage
+    );
+
     // Initialize Routes
     this.initializeRoutes(lambdaFunctions);
 
@@ -166,12 +175,15 @@ export class RouteStack extends Stack {
     const connectionsArns = scope.formatArn({
       service: "execute-api",
       resource: webSocketApi.apiId,
-      resourceName: `${webSocketStage.stageName}/POST/*`,
+      resourceName: `${webSocketStage.stageName}/POST/@connections/*`,
     });
 
     WebSocketDefaultLambda.addToRolePolicy(
       new PolicyStatement({
-        actions: ["execute-api:PostToConnection"],
+        actions: [
+          "execute-api:PostToConnection",
+          "execute-api:ManageConnections",
+        ],
         resources: [connectionsArns],
       })
     );
@@ -183,15 +195,22 @@ export class RouteStack extends Stack {
       exportName: "RouteStack-WebSocketApiEndpoint",
     });
 
+    // Output WebSocket Management API Endpoint
+    new CfnOutput(this, "WebSocketManagementEndpoint", {
+      value: `https://${webSocketApi.apiId}.execute-api.${this.region}.amazonaws.com/${webSocketStage.stageName}`,
+      description: "The endpoint URL for the WebSocket Management API",
+      exportName: "RouteStack-WebSocketManagementEndpoint",
+    });
+
     return { webSocketApi, webSocketStage };
   }
 
   private initializeLambdaFunctions(
     scope: RouteStack,
-    commonStack: CommonStack
+    commonStack: CommonStack,
+    webSocketApi: WebSocketApi,
+    webSocketStage: WebSocketStage
   ): LambdaRouteFunction[] {
-    const websocketEndpoint = Fn.importValue("RouteStack-WebSocketApiEndpoint");
-
     const healthLambda = new NodejsFunction(scope, "HealthLambda", {
       entry: "lambda/health.ts",
       handler: "handler",
@@ -203,12 +222,30 @@ export class RouteStack extends Stack {
       handler: "handler",
       runtime: Runtime.NODEJS_20_X,
       environment: {
-        WEBSOCKET_ENDPOINT: websocketEndpoint,
+        WEBSOCKET_ENDPOINT: `https://${webSocketApi.apiId}.execute-api.${this.region}.amazonaws.com/${webSocketStage.stageName}`,
         ...this.env,
       },
     });
 
     commonStack.sessionTable.grantReadWriteData(sessionLambda);
+    commonStack.connectionsTable.grantReadData(sessionLambda);
+
+    // Allow session lambda to post messages to WebSocket connections
+    const connectionsArns = scope.formatArn({
+      service: "execute-api",
+      resource: webSocketApi.apiId,
+      resourceName: `${webSocketStage.stageName}/POST/@connections/*`,
+    });
+
+    sessionLambda.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          "execute-api:PostToConnection",
+          "execute-api:ManageConnections",
+        ],
+        resources: [connectionsArns],
+      })
+    );
 
     const lambdaRoutes = [
       {

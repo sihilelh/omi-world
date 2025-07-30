@@ -12,7 +12,6 @@ export const api = axios.create({
 // Add interceptor to add token to headers
 api.interceptors.request.use((config) => {
   const token = getCognitoToken();
-  console.log("Token:", token);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

@@ -16,18 +16,9 @@ const CONNECTIONS_TABLE =
   process.env.CONNECTIONS_TABLE_NAME || "WebSocketConnections";
 
 export interface WebSocketMessage {
-  type: string;
-  data: any;
+  action: string;
+  body: any;
   timestamp?: number;
-}
-
-export interface UserJoinedMessage {
-  type: "USER_JOINED";
-  data: {
-    userId: string;
-    team: string;
-    sessionId: string;
-  };
 }
 
 /**
@@ -60,8 +51,8 @@ export const getSessionConnections = async (sessionId: string) => {
  * Broadcast message to all connections in a session
  */
 export const broadcastToSession = async (
-  sessionId: string,
   message: WebSocketMessage,
+  sessionId: string,
   webSocketEndpoint: string
 ) => {
   try {
@@ -94,7 +85,7 @@ export const broadcastToSession = async (
 
     console.log("WebSocket Util - Broadcasting message:", {
       sessionId,
-      messageType: message.type,
+      action: message.action,
       connectionCount: connections.length,
       endpoint: webSocketEndpoint,
       connections: connections.map((c) => ({
@@ -191,22 +182,6 @@ export const broadcastToSession = async (
     console.error("WebSocket Util - Error broadcasting to session:", error);
   }
 };
-
-/**
- * Create a user joined message
- */
-export const createUserJoinedMessage = (
-  userId: string,
-  team: string,
-  sessionId: string
-): UserJoinedMessage => ({
-  type: "USER_JOINED",
-  data: {
-    userId,
-    team,
-    sessionId,
-  },
-});
 
 /**
  * Clean up stale connections from DynamoDB

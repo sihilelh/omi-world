@@ -6,12 +6,21 @@ import { getSession } from "../services/session.service";
 import { CardTable, ScoreDisplay, PlayerInfo, PlayerHand } from "../components";
 import { PlayCard } from "../components/atoms/PlayCard";
 import { SuitOutline } from "../components/atoms/SuitOutline";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { useWebSocketStore } from "../stores/webSocket.store";
+import { RotateCcw } from "lucide-react";
 
 export const GamePage = () => {
   const { sessionId } = useParams();
-  const { setSession, sessionData } = useSessionStore();
+  const { setSession } = useSessionStore();
+  const { wsConnectionStatus } = useWebSocketStore();
+  const { connect, send } = useWebSocket(sessionId);
 
   useEffect(() => {
+    fetchSessionData();
+  }, [sessionId, setSession]);
+
+  const fetchSessionData = async () => {
     // If sessionId is present in the URL, fetch and store session data
     if (sessionId) {
       getSession(sessionId).then((data) => {
@@ -20,12 +29,43 @@ export const GamePage = () => {
         }
       });
     }
-  }, [sessionId, setSession]);
+  };
 
   return (
     <>
       <NavBar />
       <main className="h-[calc(100vh-5rem)] mt-20 relative flex items-center justify-center">
+        {/* Connection Status  */}
+        <div className="absolute left-8 top-4">
+          {wsConnectionStatus === "DISCONNECTED" && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+              <p className="text-xs text-red-100">Disconnected</p>
+              <button
+                title="Try Again!"
+                onClick={connect}
+                className="text-red-100 cursor-pointer"
+              >
+                <RotateCcw size={12} />
+              </button>
+            </div>
+          )}
+          {wsConnectionStatus === "CONNECTED" && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full border border-white"></div>
+              <p className="text-xs text-green-100">Connected</p>
+            </div>
+          )}
+          {wsConnectionStatus === "CONNECTING" && (
+            <div className="flex items-center gap-2 animate-pulse">
+              <div className="w-2 h-2 bg-neutral-500 rounded-full border border-white"></div>
+              <p className="text-xs text-neutral-100">
+                Connecting to server ...
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Scores  */}
         <div className="absolute right-8 top-4">
           <ScoreDisplay redScore={10} blackScore={10} />
@@ -71,7 +111,13 @@ export const GamePage = () => {
 
             {/* Right Players Table Card  */}
             <div className="absolute right-8 top-1/2 -translate-y-1/2">
-              <PlayCard cardType="CLUBS_7" size="sm" />
+              <PlayCard
+                cardType="CLUBS_7"
+                size="sm"
+                onClick={() => {
+                  send("health");
+                }}
+              />
             </div>
 
             {/* Left Players Table Card  */}

@@ -12,10 +12,7 @@ import {
   PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { cb, cbError } from "../utils/cb.util";
-import {
-  broadcastToSession,
-  createUserJoinedMessage,
-} from "../utils/websocket.util";
+import { broadcastToSession } from "../utils/websocket.util";
 
 const dynamoDBClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
@@ -256,15 +253,16 @@ const joinSession = async (
     // Broadcast user joined message to all session participants
     if (WEBSOCKET_ENDPOINT) {
       try {
-        const userJoinedMessage = createUserJoinedMessage(
-          joiningUser,
-          body.team,
-          sessionId
-        );
-
         await broadcastToSession(
+          {
+            action: "USER_JOINED",
+            body: {
+              userId: joiningUser,
+              team: body.team,
+              sessionId,
+            },
+          },
           sessionId,
-          userJoinedMessage,
           WEBSOCKET_ENDPOINT
         );
 

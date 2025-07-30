@@ -1,4 +1,21 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+} from "@aws-sdk/lib-dynamodb";
+import { startGame } from "../../actions/start-game";
+
+const dynamoDBClient = new DynamoDBClient({});
+const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
+
+const SESSIONS_TABLE = process.env.SESSIONS_TABLE_NAME || "OmiWorldSessions";
+const ROUNDS_TABLE = process.env.ROUNDS_TABLE_NAME || "OmiWorldRounds";
+const MOVES_TABLE = process.env.MOVES_TABLE_NAME || "OmiWorldMoves";
+const CONNECTIONS_TABLE =
+  process.env.CONNECTIONS_TABLE_NAME || "OmiWorldConnections";
+const WEBSOCKET_ENDPOINT = process.env.WEBSOCKET_ENDPOINT;
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -16,11 +33,11 @@ export const handler = async (
     // This can be extended later for handling specific message types
 
     switch (body?.action) {
-      case "health":
+      case "HEALTH":
         return {
           statusCode: 200,
           body: JSON.stringify({
-            action: "health",
+            action: "HEALTH",
             body: {
               status: "OK",
               timestamp: new Date().toISOString(),
@@ -29,7 +46,14 @@ export const handler = async (
           }),
         };
         break;
-
+      case "GAME_START":
+        return await startGame({
+          connectionId: connectionId!,
+          docClient,
+          sessionsTable: SESSIONS_TABLE,
+          connectionsTable: CONNECTIONS_TABLE,
+          webSocketEndpoint: WEBSOCKET_ENDPOINT,
+        });
       default:
         return {
           statusCode: 200,

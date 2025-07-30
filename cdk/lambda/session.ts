@@ -102,7 +102,7 @@ const createSession = async (
     const sessionData = {
       pk: sessionId,
       createdAt: new Date().toISOString(),
-      status: "active",
+      status: "waiting",
       createdUser: createdUser,
       currentActiveUser: createdUser,
       currentRound: 0,

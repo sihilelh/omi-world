@@ -232,8 +232,17 @@ export class RouteStack extends Stack {
       },
     });
 
+    const roundLambda = new NodejsFunction(scope, "RoundLambda", {
+      entry: "lambda/round.ts",
+      handler: "handler",
+      runtime: Runtime.NODEJS_20_X,
+      environment: this.env,
+    });
+
     commonStack.sessionTable.grantReadWriteData(sessionLambda);
     commonStack.connectionsTable.grantReadData(sessionLambda);
+    commonStack.roundsTable.grantReadData(roundLambda);
+    commonStack.sessionTable.grantReadData(roundLambda);
 
     // Allow session lambda to post messages to WebSocket connections
     const connectionsArns = scope.formatArn({
@@ -270,6 +279,12 @@ export class RouteStack extends Stack {
         path: "/sessions/{sessionId}",
         methods: [HttpMethod.PUT, HttpMethod.GET],
         fn: sessionLambda,
+      },
+      {
+        name: "RoundLambda",
+        path: "/rounds/{roundId}",
+        methods: [HttpMethod.GET],
+        fn: roundLambda,
       },
     ];
 

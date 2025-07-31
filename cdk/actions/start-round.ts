@@ -164,6 +164,8 @@ export const startRound = async ({
       sessionId,
       seed,
       trickSuit: null,
+      currentSuit: "ALL",
+      currentMove: 1,
       playerHands,
       moveWins: {
         TEAM_RED: 0,

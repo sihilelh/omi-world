@@ -14,6 +14,7 @@ import { useRoundStore } from "../stores/roundStore";
 import { TrickSuitSelect } from "../components/molecules/TrickSuitSelect";
 import { getCardNameByNumber } from "../utils/playCard";
 import { useAuth } from "../hooks/useAuth";
+import { useGameRound } from "../hooks/useGameRound";
 
 export const GamePage = () => {
   const { sessionId } = useParams();
@@ -27,11 +28,19 @@ export const GamePage = () => {
     setIsSuitSelectorEnabled,
     currentSlot,
     currentSuit,
+    currentMove,
   } = useRoundStore();
+  const { handlePageRefreshRestore } = useGameRound();
 
   useEffect(() => {
     fetchSessionData();
   }, [sessionId, setSession]);
+
+  useEffect(() => {
+    if (sessionData && sessionData.status === "active" && sessionData.currentRound > 0) {
+      handlePageRefreshRestore();
+    }
+  }, [sessionData?.currentRound, handlePageRefreshRestore]);
 
   const fetchSessionData = async () => {
     // If sessionId is present in the URL, fetch and store session data

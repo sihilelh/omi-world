@@ -184,6 +184,82 @@ export const broadcastToSession = async (
 };
 
 /**
+ * Send message to a specific player by slot
+ */
+export const sendToPlayerSlot = async (
+  message: WebSocketMessage,
+  sessionId: string,
+  playerSlot: number,
+  webSocketEndpoint: string
+) => {
+  try {
+    const connections = await getSessionConnections(sessionId);
+
+    if (connections.length === 0) {
+      console.log("WebSocket Util - No connections to send to:", {
+        sessionId,
+        playerSlot,
+      });
+      return;
+    }
+
+    // Find the connection for the specific player slot
+    const targetConnection = connections.find(
+      (connection) => connection.playerSlot === playerSlot
+    );
+
+    if (!targetConnection) {
+      console.log("WebSocket Util - No connection found for player slot:", {
+        sessionId,
+        playerSlot,
+      });
+      return;
+    }
+
+    // Validate endpoint format
+    if (!webSocketEndpoint || !webSocketEndpoint.startsWith("https://")) {
+      console.error(
+        "WebSocket Util - Invalid endpoint format:",
+        webSocketEndpoint
+      );
+      return;
+    }
+
+    const apiGatewayManagementApi = new ApiGatewayManagementApiClient({
+      endpoint: webSocketEndpoint,
+    });
+
+    const messageData = JSON.stringify({
+      ...message,
+      timestamp: Date.now(),
+    });
+
+    console.log("WebSocket Util - Sending message to player slot:", {
+      sessionId,
+      playerSlot,
+      action: message.action,
+      connectionId: targetConnection.connectionId,
+    });
+
+    // Send message to specific connection
+    await apiGatewayManagementApi.send(
+      new PostToConnectionCommand({
+        ConnectionId: targetConnection.connectionId,
+        Data: messageData,
+      })
+    );
+
+    console.log("WebSocket Util - Message sent successfully to player slot:", {
+      sessionId,
+      playerSlot,
+      connectionId: targetConnection.connectionId,
+    });
+  } catch (error) {
+    console.error("WebSocket Util - Error sending to player slot:", error);
+  }
+};
+
+/**
  * Clean up stale connections from DynamoDB
  */
 export const cleanupStaleConnections = async (connectionIds: string[]) => {

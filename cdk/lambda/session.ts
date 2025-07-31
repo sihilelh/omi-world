@@ -52,7 +52,7 @@ export const handler = async (
         return cb(405, {
           error: "Method Not Allowed",
           message: `HTTP method ${httpMethod} not supported`,
-          allowedMethods: ["POST", "PUT"],
+          allowedMethods: ["POST", "PUT", "GET"],
         });
     }
   } catch (error) {
@@ -104,22 +104,23 @@ const createSession = async (
       createdAt: new Date().toISOString(),
       status: "waiting",
       createdUser: createdUser,
-      currentActiveUser: createdUser,
+      currentActiveSlot: 0,
       currentRound: 0,
       teams: [
         {
-          teamId: "TEAM_1",
+          teamId: "TEAM_RED",
           score: 10,
         },
         {
-          teamId: "TEAM_2",
+          teamId: "TEAM_BLACK",
           score: 10,
         },
       ],
       players: [
         {
           userId: createdUser,
-          team: "TEAM_1",
+          team: "TEAM_RED",
+          slot: 0,
         },
       ],
     };
@@ -177,7 +178,7 @@ const joinSession = async (
     }
 
     // Check if the provided team is valid
-    const validTeams = ["TEAM_1", "TEAM_2"];
+    const validTeams = ["TEAM_RED", "TEAM_BLACK"];
     if (!validTeams.includes(body.team)) {
       return cb(400, { error: "Invalid team" });
     }
@@ -237,10 +238,28 @@ const joinSession = async (
       return cb(400, { error: "User already joined the session." });
     }
 
+    // Generating the next slot for the user
+    // Team red only can only have 0 and 2 slots
+    // Team black only can only have 1 and 3 slots
+    const playersInTeamCount = session.players.filter(
+      (p: any) => p.team === body.team
+    ).length;
+    let slot;
+    if (body.team === "TEAM_RED" && playersInTeamCount === 0) {
+      slot = 0;
+    } else if (body.team === "TEAM_RED" && playersInTeamCount === 1) {
+      slot = 2;
+    } else if (body.team === "TEAM_BLACK" && playersInTeamCount === 0) {
+      slot = 1;
+    } else if (body.team === "TEAM_BLACK" && playersInTeamCount === 1) {
+      slot = 3;
+    }
+
     // Update session data
     session.players.push({
       userId: joiningUser,
       team: body.team,
+      slot,
     });
 
     await docClient.send(

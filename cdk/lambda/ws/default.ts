@@ -6,6 +6,10 @@ import {
   PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { startGame } from "../../actions/start-game";
+import {
+  startRound,
+  handleTrickSuitSelection,
+} from "../../actions/start-round";
 
 const dynamoDBClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
@@ -53,6 +57,25 @@ export const handler = async (
           sessionsTable: SESSIONS_TABLE,
           connectionsTable: CONNECTIONS_TABLE,
           webSocketEndpoint: WEBSOCKET_ENDPOINT,
+        });
+      case "ROUND_START":
+        return await startRound({
+          connectionId: connectionId!,
+          docClient,
+          sessionsTable: SESSIONS_TABLE,
+          roundsTable: ROUNDS_TABLE,
+          connectionsTable: CONNECTIONS_TABLE,
+          webSocketEndpoint: WEBSOCKET_ENDPOINT,
+        });
+      case "TRICK_SUIT_SELECT":
+        return await handleTrickSuitSelection({
+          connectionId: connectionId!,
+          docClient,
+          sessionsTable: SESSIONS_TABLE,
+          roundsTable: ROUNDS_TABLE,
+          connectionsTable: CONNECTIONS_TABLE,
+          webSocketEndpoint: WEBSOCKET_ENDPOINT,
+          trickSuit: body.trickSuit,
         });
       default:
         return {

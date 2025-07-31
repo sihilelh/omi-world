@@ -105,9 +105,9 @@ export const JoinSessionDialog = ({
 
   const getTeamSlots = () => {
     const redPlayers =
-      sessionData?.players.filter((p) => p.team === "TEAM_1") || [];
+      sessionData?.players.filter((p) => p.team === "TEAM_RED") || [];
     const blackPlayers =
-      sessionData?.players.filter((p) => p.team === "TEAM_2") || [];
+      sessionData?.players.filter((p) => p.team === "TEAM_BLACK") || [];
 
     return {
       red: {
@@ -235,13 +235,13 @@ export const JoinSessionDialog = ({
                               {[0, 1].map((slotIndex) => {
                                 const player = slots.red.occupied[slotIndex];
                                 const isOccupied = !!player;
-                                const isSelected = selectedTeam === "TEAM_1";
+                                const isSelected = selectedTeam === "TEAM_RED";
 
                                 return (
                                   <button
                                     key={`red-${slotIndex}`}
                                     onClick={() =>
-                                      !isOccupied && setSelectedTeam("TEAM_1")
+                                      !isOccupied && setSelectedTeam("TEAM_RED")
                                     }
                                     disabled={isOccupied}
                                     className={`p-3 rounded-lg border-2 transition-all ${
@@ -276,13 +276,15 @@ export const JoinSessionDialog = ({
                               {[0, 1].map((slotIndex) => {
                                 const player = slots.black.occupied[slotIndex];
                                 const isOccupied = !!player;
-                                const isSelected = selectedTeam === "TEAM_2";
+                                const isSelected =
+                                  selectedTeam === "TEAM_BLACK";
 
                                 return (
                                   <button
                                     key={`black-${slotIndex}`}
                                     onClick={() =>
-                                      !isOccupied && setSelectedTeam("TEAM_2")
+                                      !isOccupied &&
+                                      setSelectedTeam("TEAM_BLACK")
                                     }
                                     disabled={isOccupied}
                                     className={`p-3 rounded-lg border-2 transition-all ${

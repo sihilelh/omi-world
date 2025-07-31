@@ -1,13 +1,10 @@
 import { create } from "zustand";
-import type { CreateSessionResponse } from "../services/session.service";
+import type { SessionData } from "../services/session.service";
 
 interface SessionState {
   sessionId: string | null;
-  sessionData: CreateSessionResponse["sessionData"] | null;
-  setSession: (
-    sessionId: string,
-    sessionData: CreateSessionResponse["sessionData"]
-  ) => void;
+  sessionData: SessionData | null;
+  setSession: (sessionId: string, sessionData: SessionData) => void;
   clearSession: () => void;
 }
 

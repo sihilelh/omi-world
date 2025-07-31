@@ -21,8 +21,8 @@ interface StartRoundResult {
 }
 
 // Card deck constants
-const SUIT_SET = ["Spades", "Hearts", "Clubs", "Diamonds"];
-const CARD_SET = ["7", "8", "9", "10", "J", "Q", "K", "A"];
+const SUIT_SET = ["SPADES", "HEARTS", "CLUBS", "DIAMONDS"];
+const CARD_SET = ["7", "8", "9", "10", "JACK", "QUEEN", "KING", "ACE"];
 
 // Utility functions for card handling
 function swap(arr: number[], i: number, j: number): number[] {
@@ -379,7 +379,7 @@ export const handleTrickSuitSelection = async ({
     }
 
     // Validate trick suit
-    const validSuits = ["Spades", "Hearts", "Clubs", "Diamonds"];
+    const validSuits = ["SPADES", "HEARTS", "CLUBS", "DIAMONDS"];
     if (!validSuits.includes(trickSuit)) {
       return {
         statusCode: 400,

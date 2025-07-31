@@ -3,6 +3,7 @@ import {
   DynamoDBDocumentClient,
   QueryCommand,
   DeleteCommand,
+  GetCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
   ApiGatewayManagementApiClient,
@@ -204,8 +205,37 @@ export const sendToPlayerSlot = async (
     }
 
     // Find the connection for the specific player slot
+    // We need to get the session to find which userId corresponds to the playerSlot
+    const sessionResult = await docClient.send(
+      new GetCommand({
+        TableName: process.env.SESSIONS_TABLE_NAME || "OmiWorldSessions",
+        Key: { pk: sessionId },
+      })
+    );
+
+    if (!sessionResult.Item) {
+      console.log("WebSocket Util - Session not found:", {
+        sessionId,
+        playerSlot,
+      });
+      return;
+    }
+
+    const session = sessionResult.Item;
+    const targetPlayer = session.players.find(
+      (player: any) => player.slot === playerSlot
+    );
+
+    if (!targetPlayer) {
+      console.log("WebSocket Util - Player not found for slot:", {
+        sessionId,
+        playerSlot,
+      });
+      return;
+    }
+
     const targetConnection = connections.find(
-      (connection) => connection.playerSlot === playerSlot
+      (connection) => connection.userId === targetPlayer.userId
     );
 
     if (!targetConnection) {

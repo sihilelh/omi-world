@@ -10,9 +10,9 @@ export const SessionWaitCard = ({ startGame }: { startGame: () => void }) => {
   const { user } = useAuth();
   const getTeamSlots = () => {
     const redPlayers =
-      sessionData?.players.filter((p) => p.team === "TEAM_1") || [];
+      sessionData?.players.filter((p) => p.team === "TEAM_RED") || [];
     const blackPlayers =
-      sessionData?.players.filter((p) => p.team === "TEAM_2") || [];
+      sessionData?.players.filter((p) => p.team === "TEAM_BLACK") || [];
 
     return {
       red: {

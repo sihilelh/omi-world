@@ -3,27 +3,30 @@ import { api } from "../utils/api";
 
 export interface Player {
   userId: string;
-  team: string;
+  team: "TEAM_BLACK" | "TEAM_RED";
+  slot: number;
 }
 
 export interface Team {
-  teamId: string;
+  teamId: "TEAM_BLACK" | "TEAM_RED";
   score: number;
+}
+
+export interface SessionData {
+  pk: string;
+  createdAt: string;
+  status: string;
+  createdUser: string;
+  currentActiveSlot: number;
+  currentRound: number;
+  teams: Array<Team>;
+  players: Array<Player>;
 }
 
 export interface CreateSessionResponse {
   message: string;
   sessionId: string;
-  sessionData: {
-    pk: string;
-    createdAt: string;
-    status: string;
-    createdUser: string;
-    currentActiveUser: string;
-    currentRound: number;
-    teams: Array<Team>;
-    players: Array<Player>;
-  };
+  sessionData: SessionData;
 }
 
 export const createSession = async () => {

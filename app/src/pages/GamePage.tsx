@@ -10,12 +10,24 @@ import { useWebSocket } from "../hooks/useWebSocket";
 import { useWebSocketStore } from "../stores/webSocket.store";
 import { RotateCcw } from "lucide-react";
 import { SessionWaitCard } from "../components/molecules/SessionWaitCard";
+import { useRoundStore } from "../stores/roundStore";
+import { TrickSuitSelect } from "../components/molecules/TrickSuitSelect";
+import { getCardNameByNumber } from "../utils/playCard";
+import { useAuth } from "../hooks/useAuth";
 
 export const GamePage = () => {
   const { sessionId } = useParams();
   const { setSession, sessionData } = useSessionStore();
+  const { user } = useAuth();
   const { wsConnectionStatus } = useWebSocketStore();
   const { connect, send } = useWebSocket(sessionId);
+  const {
+    isSuitSelectorEnabled,
+    myCardSet,
+    setIsSuitSelectorEnabled,
+    currentSlot,
+    currentSuit,
+  } = useRoundStore();
 
   useEffect(() => {
     fetchSessionData();
@@ -32,21 +44,44 @@ export const GamePage = () => {
     }
   };
 
+  const mySlot =
+    sessionData?.players.find((player) => player.userId === user?.username)
+      ?.slot || 0;
+
+  const topPlayer = sessionData?.players.find(
+    (player) => player.slot === (mySlot + 2) % 4
+  );
+  const leftPlayer = sessionData?.players.find(
+    (player) => player.slot === (mySlot + 3) % 4
+  );
+  const rightPlayer = sessionData?.players.find(
+    (player) => player.slot === (mySlot + 1) % 4
+  );
+
   const GameComponent = () => {
     return (
       <>
         {/* Scores  */}
         <div className="absolute right-8 top-4">
-          <ScoreDisplay redScore={10} blackScore={10} />
+          <ScoreDisplay
+            redScore={
+              sessionData?.teams.find((team) => team.teamId === "TEAM_RED")
+                ?.score || 0
+            }
+            blackScore={
+              sessionData?.teams.find((team) => team.teamId === "TEAM_BLACK")
+                ?.score || 0
+            }
+          />
         </div>
 
         {/* Other Players  */}
         {/* Top Player  */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2">
           <PlayerInfo
-            name="sihilelh"
+            name={topPlayer?.userId || "Unknown"}
             cardCount={8}
-            teamColor="red"
+            teamColor={topPlayer?.team === "TEAM_RED" ? "red" : "black"}
             position="top"
           />
         </div>
@@ -54,9 +89,9 @@ export const GamePage = () => {
         {/* Left Player  */}
         <div className="absolute top-1/2 left-8 -translate-y-1/2">
           <PlayerInfo
-            name="jhon"
+            name={leftPlayer?.userId || "Unknown"}
             cardCount={8}
-            teamColor="black"
+            teamColor={leftPlayer?.team === "TEAM_RED" ? "red" : "black"}
             position="left"
           />
         </div>
@@ -64,9 +99,9 @@ export const GamePage = () => {
         {/* Right Player  */}
         <div className="absolute top-1/2 right-8 -translate-y-1/2">
           <PlayerInfo
-            name="jane"
+            name={rightPlayer?.userId || "Unknown"}
             cardCount={8}
-            teamColor="black"
+            teamColor={rightPlayer?.team === "TEAM_RED" ? "red" : "black"}
             position="right"
           />
         </div>
@@ -84,7 +119,7 @@ export const GamePage = () => {
                 cardType="CLUBS_7"
                 size="sm"
                 onClick={() => {
-                  send("health");
+                  send("START_ROUND");
                 }}
               />
             </div>
@@ -108,16 +143,12 @@ export const GamePage = () => {
 
         <div className="absolute bottom-4">
           <PlayerHand
-            cards={[
-              { cardType: "CLUBS_QUEEN", disabled: true },
-              { cardType: "HEARTS_10" },
-              { cardType: "SPADES_ACE" },
-              { cardType: "DIAMONDS_9" },
-              { cardType: "CLUBS_7" },
-              { cardType: "HEARTS_KING" },
-              { cardType: "SPADES_9" },
-              { cardType: "DIAMONDS_JACK" },
-            ]}
+            cards={myCardSet.map((card) => ({
+              cardType: getCardNameByNumber(card.number),
+              disabled:
+                mySlot !== currentSlot ||
+                (currentSuit !== "ALL" && card.suit !== currentSuit),
+            }))}
             onCardClick={(cardType) => {
               console.log("Card clicked:", cardType);
               // Handle card selection logic here
@@ -169,7 +200,30 @@ export const GamePage = () => {
         )}
 
         {/* Running session which users can play  */}
-        {sessionData && sessionData.status === "active" && <GameComponent />}
+        {sessionData &&
+          sessionData.status === "active" &&
+          myCardSet.length > 0 &&
+          !isSuitSelectorEnabled && <GameComponent />}
+
+        {sessionData &&
+          sessionData.status === "active" &&
+          myCardSet.length === 0 && (
+            <div className="text-white text-2xl font-bold">
+              Waiting for cards ...
+            </div>
+          )}
+
+        {isSuitSelectorEnabled && (
+          <TrickSuitSelect
+            myCardSet={myCardSet}
+            onSuitClick={(suit) => {
+              setIsSuitSelectorEnabled(false);
+              send("TRICK_SUIT_SELECT", {
+                trickSuit: suit,
+              });
+            }}
+          />
+        )}
       </main>
     </>
   );

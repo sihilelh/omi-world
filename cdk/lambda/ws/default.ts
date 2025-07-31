@@ -75,7 +75,7 @@ export const handler = async (
           roundsTable: ROUNDS_TABLE,
           connectionsTable: CONNECTIONS_TABLE,
           webSocketEndpoint: WEBSOCKET_ENDPOINT,
-          trickSuit: body.trickSuit,
+          trickSuit: body.body.trickSuit,
         });
       default:
         return {

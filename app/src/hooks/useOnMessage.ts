@@ -1,6 +1,7 @@
 import { useSessionStore } from "../stores/sessionStore";
 import { getSession } from "../services/session.service";
 import { toast } from "sonner";
+import { type PlayerCard, useRoundStore } from "../stores/roundStore";
 
 interface UserJoinedBody {
   userId: string;
@@ -14,8 +15,31 @@ interface GameStartedBody {
   timestamp: string;
 }
 
+interface ReceiveCardSetBody {
+  roundId: string;
+  sessionId: string;
+  playerSlot: number;
+  cards: PlayerCard[];
+  isFirstSet: boolean;
+  timestamp: string;
+}
+
+interface TrickSuitSelectedBody {
+  roundId: string;
+  sessionId: string;
+  trickSuit: string;
+  selectedBySlot: number;
+  timestamp: string;
+}
+
 export const useOnMessage = () => {
   const { setSession } = useSessionStore();
+  const {
+    setMyCardSet,
+    setTrickSuit,
+    setCurrentSlot,
+    setIsSuitSelectorEnabled,
+  } = useRoundStore();
 
   const handleMessage = (ws: WebSocket, event: MessageEvent) => {
     const data = JSON.parse(event.data);
@@ -30,6 +54,15 @@ export const useOnMessage = () => {
         break;
       case "GAME_STARTED":
         handleGameStarted(body);
+        break;
+      case "GAME_START_SUCCESS":
+        handleStartRound(ws);
+        break;
+      case "RECEIVE_CARD_SET":
+        handleReceiveCardSet(body);
+        break;
+      case "TRICK_SUIT_SELECTED":
+        handleTrickSuitSelected(body);
         break;
 
       default:
@@ -66,5 +99,41 @@ export const useOnMessage = () => {
       toast.error("Game started but something went wrong");
     }
   };
+
+  const handleStartRound = async (ws: WebSocket) => {
+    try {
+      ws.send(
+        JSON.stringify({
+          action: "ROUND_START",
+          body: {},
+        })
+      );
+    } catch (error) {
+      console.log("WS:ERROR_START_ROUND", error);
+    }
+  };
+
+  const handleReceiveCardSet = async (body: ReceiveCardSetBody) => {
+    try {
+      const { isFirstSet } = body;
+      setMyCardSet(body.cards);
+      if (isFirstSet) {
+        setIsSuitSelectorEnabled(true);
+      }
+    } catch (error) {
+      console.log("WS:ERROR_RECEIVE_CARD_SET", error);
+    }
+  };
+
+  const handleTrickSuitSelected = async (body: TrickSuitSelectedBody) => {
+    try {
+      const { trickSuit } = body;
+      setTrickSuit(trickSuit);
+      setCurrentSlot(body.selectedBySlot);
+    } catch (error) {
+      console.log("WS:ERROR_TRICK_SUIT_SELECTED", error);
+    }
+  };
+
   return handleMessage;
 };

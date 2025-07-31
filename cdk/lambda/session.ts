@@ -205,8 +205,8 @@ const joinSession = async (
 
     const session = sessionData.Item;
 
-    if (session.status !== "active") {
-      return cb(400, { error: "Session is not active" });
+    if (session.status !== "waiting") {
+      return cb(400, { error: "Session is not open for joining" });
     }
 
     // Each team only can have 2 players and total players in a session is 4

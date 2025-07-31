@@ -9,10 +9,11 @@ import { SuitOutline } from "../components/atoms/SuitOutline";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useWebSocketStore } from "../stores/webSocket.store";
 import { RotateCcw } from "lucide-react";
+import { SessionWaitCard } from "../components/molecules/SessionWaitCard";
 
 export const GamePage = () => {
   const { sessionId } = useParams();
-  const { setSession } = useSessionStore();
+  const { setSession, sessionData } = useSessionStore();
   const { wsConnectionStatus } = useWebSocketStore();
   const { connect, send } = useWebSocket(sessionId);
 
@@ -31,41 +32,9 @@ export const GamePage = () => {
     }
   };
 
-  return (
-    <>
-      <NavBar />
-      <main className="h-[calc(100vh-5rem)] mt-20 relative flex items-center justify-center">
-        {/* Connection Status  */}
-        <div className="absolute left-8 top-4">
-          {wsConnectionStatus === "DISCONNECTED" && (
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full border border-white"></div>
-              <p className="text-xs text-red-100">Disconnected</p>
-              <button
-                title="Try Again!"
-                onClick={connect}
-                className="text-red-100 cursor-pointer"
-              >
-                <RotateCcw size={12} />
-              </button>
-            </div>
-          )}
-          {wsConnectionStatus === "CONNECTED" && (
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full border border-white"></div>
-              <p className="text-xs text-green-100">Connected</p>
-            </div>
-          )}
-          {wsConnectionStatus === "CONNECTING" && (
-            <div className="flex items-center gap-2 animate-pulse">
-              <div className="w-2 h-2 bg-neutral-500 rounded-full border border-white"></div>
-              <p className="text-xs text-neutral-100">
-                Connecting to server ...
-              </p>
-            </div>
-          )}
-        </div>
-
+  const GameComponent = () => {
+    return (
+      <>
         {/* Scores  */}
         <div className="absolute right-8 top-4">
           <ScoreDisplay redScore={10} blackScore={10} />
@@ -156,6 +125,51 @@ export const GamePage = () => {
             className="flex items-center justify-center gap-4"
           />
         </div>
+      </>
+    );
+  };
+
+  return (
+    <>
+      <NavBar />
+      <main className="h-[calc(100vh-5rem)] mt-20 relative flex items-center justify-center">
+        {/* Connection Status  */}
+        <div className="absolute left-8 top-4">
+          {wsConnectionStatus === "DISCONNECTED" && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+              <p className="text-xs text-red-100">Disconnected</p>
+              <button
+                title="Try Again!"
+                onClick={connect}
+                className="text-red-100 cursor-pointer"
+              >
+                <RotateCcw size={12} />
+              </button>
+            </div>
+          )}
+          {wsConnectionStatus === "CONNECTED" && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full border border-white"></div>
+              <p className="text-xs text-green-100">Connected</p>
+            </div>
+          )}
+          {wsConnectionStatus === "CONNECTING" && (
+            <div className="flex items-center gap-2 animate-pulse">
+              <div className="w-2 h-2 bg-neutral-500 rounded-full border border-white"></div>
+              <p className="text-xs text-neutral-100">
+                Connecting to server ...
+              </p>
+            </div>
+          )}
+        </div>
+        {/* Active session which users can join  */}
+        {sessionData && sessionData.status === "waiting" && (
+          <SessionWaitCard startGame={() => send("GAME_START")} />
+        )}
+
+        {/* Running session which users can play  */}
+        {sessionData && sessionData.status === "active" && <GameComponent />}
       </main>
     </>
   );

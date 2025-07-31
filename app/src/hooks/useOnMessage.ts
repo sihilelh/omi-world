@@ -8,6 +8,12 @@ interface UserJoinedBody {
   sessionId: string;
 }
 
+interface GameStartedBody {
+  sessionId: string;
+  startedBy: string;
+  timestamp: string;
+}
+
 export const useOnMessage = () => {
   const { setSession } = useSessionStore();
 
@@ -22,6 +28,10 @@ export const useOnMessage = () => {
       case "USER_JOINED":
         handleUserJoined(body);
         break;
+      case "GAME_STARTED":
+        handleGameStarted(body);
+        break;
+
       default:
         console.warn(`WS:UNKNOWN_ACTION(${action})`, body);
         break;
@@ -44,5 +54,17 @@ export const useOnMessage = () => {
     }
   };
 
+  const handleGameStarted = async (body: GameStartedBody) => {
+    try {
+      const { sessionId, startedBy } = body;
+      const session = await getSession(sessionId);
+      if (session) {
+        setSession(sessionId, session.sessionData);
+      }
+      toast.success(`Game started by ${startedBy}`);
+    } catch (error) {
+      toast.error("Game started but something went wrong");
+    }
+  };
   return handleMessage;
 };

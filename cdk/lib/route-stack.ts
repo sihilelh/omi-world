@@ -124,25 +124,6 @@ export class RouteStack extends Stack {
       }
     );
 
-    const WebSocketDefaultLambda = new NodejsFunction(
-      scope,
-      "WebSocketDefaultLambda",
-      {
-        entry: "lambda/ws/default.ts",
-        handler: "handler",
-        runtime: Runtime.NODEJS_20_X,
-        environment: this.env,
-      }
-    );
-
-    commonStack.connectionsTable.grantReadWriteData(WebSocketConnectLambda);
-    commonStack.connectionsTable.grantReadWriteData(WebSocketDisconnectLambda);
-
-    commonStack.connectionsTable.grantReadWriteData(WebSocketDefaultLambda);
-    commonStack.sessionTable.grantReadWriteData(WebSocketDefaultLambda);
-    commonStack.roundsTable.grantReadWriteData(WebSocketDefaultLambda);
-    commonStack.movesTable.grantReadWriteData(WebSocketDefaultLambda);
-
     const webSocketApi = new WebSocketApi(this, "OmiWebSocketApi", {
       apiName: "OmiWebSocketApi",
       connectRouteOptions: {
@@ -157,12 +138,6 @@ export class RouteStack extends Stack {
           WebSocketDisconnectLambda
         ),
       },
-      defaultRouteOptions: {
-        integration: new WebSocketLambdaIntegration(
-          "WebSocketDefaultLambdaIntegration",
-          WebSocketDefaultLambda
-        ),
-      },
     });
 
     const webSocketStage = new WebSocketStage(this, "OmiWebSocketStage", {
@@ -170,6 +145,36 @@ export class RouteStack extends Stack {
       stageName: "dev",
       autoDeploy: true,
     });
+
+    const WebSocketDefaultLambda = new NodejsFunction(
+      scope,
+      "WebSocketDefaultLambda",
+      {
+        entry: "lambda/ws/default.ts",
+        handler: "handler",
+        runtime: Runtime.NODEJS_20_X,
+        environment: {
+          WEBSOCKET_ENDPOINT: `https://${webSocketApi.apiId}.execute-api.${this.region}.amazonaws.com/${webSocketStage.stageName}`,
+          ...this.env,
+        },
+      }
+    );
+
+    // Add default route after creating the lambda
+    webSocketApi.addRoute("$default", {
+      integration: new WebSocketLambdaIntegration(
+        "WebSocketDefaultLambdaIntegration",
+        WebSocketDefaultLambda
+      ),
+    });
+
+    commonStack.connectionsTable.grantReadWriteData(WebSocketConnectLambda);
+    commonStack.connectionsTable.grantReadWriteData(WebSocketDisconnectLambda);
+
+    commonStack.connectionsTable.grantReadWriteData(WebSocketDefaultLambda);
+    commonStack.sessionTable.grantReadWriteData(WebSocketDefaultLambda);
+    commonStack.roundsTable.grantReadWriteData(WebSocketDefaultLambda);
+    commonStack.movesTable.grantReadWriteData(WebSocketDefaultLambda);
 
     // Allow default handler to post messages to connected clients
     const connectionsArns = scope.formatArn({

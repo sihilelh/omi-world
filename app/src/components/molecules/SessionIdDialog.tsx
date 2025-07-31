@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../atoms/Button";
@@ -27,6 +27,8 @@ interface JoinSessionDialogProps {
   onClose: () => void;
   onSubmit: (sessionId: string, selectedTeam: string) => void;
   loading?: boolean;
+  preFilledSessionId?: string;
+  skipToTeamSelection?: boolean;
 }
 
 export const JoinSessionDialog = ({
@@ -34,12 +36,38 @@ export const JoinSessionDialog = ({
   onClose,
   onSubmit,
   loading,
+  preFilledSessionId,
+  skipToTeamSelection = false,
 }: JoinSessionDialogProps) => {
-  const [step, setStep] = useState(1);
-  const [sessionId, setSessionId] = useState("");
+  const [step, setStep] = useState(skipToTeamSelection ? 2 : 1);
+  const [sessionId, setSessionId] = useState(preFilledSessionId || "");
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string>("");
   const [fetchingSession, setFetchingSession] = useState(false);
+
+  // Auto-fetch session data when pre-filled session ID is provided
+  useEffect(() => {
+    if (isOpen && preFilledSessionId && skipToTeamSelection) {
+      const fetchSessionData = async () => {
+        setFetchingSession(true);
+        try {
+          const response = await getSession(preFilledSessionId);
+          if (response) {
+            setSessionData(response.sessionData);
+          } else {
+            toast.error("Session not found");
+            onClose();
+          }
+        } catch (error) {
+          toast.error("Failed to fetch session details");
+          onClose();
+        } finally {
+          setFetchingSession(false);
+        }
+      };
+      fetchSessionData();
+    }
+  }, [isOpen, preFilledSessionId, skipToTeamSelection, onClose]);
 
   const handleSessionIdSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

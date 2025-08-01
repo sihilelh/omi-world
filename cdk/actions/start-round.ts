@@ -21,8 +21,8 @@ interface StartRoundResult {
 }
 
 // Card deck constants
-const SUIT_SET = ["SPADES", "HEARTS", "CLUBS", "DIAMONDS"];
-const CARD_SET = ["7", "8", "9", "10", "JACK", "QUEEN", "KING", "ACE"];
+export const SUIT_SET = ["SPADES", "HEARTS", "CLUBS", "DIAMONDS"];
+export const CARD_SET = ["7", "8", "9", "10", "JACK", "QUEEN", "KING", "ACE"];
 
 // Utility functions for card handling
 function swap(arr: number[], i: number, j: number): number[] {
@@ -32,7 +32,7 @@ function swap(arr: number[], i: number, j: number): number[] {
   return arr;
 }
 
-function decodeCard(number: number): { suit: string; card: string } {
+export function decodeCard(number: number): { suit: string; card: string } {
   const suit = SUIT_SET[Math.floor(number / 8)];
   const card = CARD_SET[number % 8];
   return { suit, card };
@@ -131,13 +131,17 @@ export const startRound = async ({
     const session = sessionResult.Item;
 
     // Check if session is active
-    if (session.status !== "active") {
+    if (session.status !== "active" && session.status !== "active:hold") {
       return {
         statusCode: 400,
         body: JSON.stringify({
           error: "Round can only be started when session is active",
         }),
       };
+    }
+
+    if (session.status === "active:hold") {
+      session.status = "active";
     }
 
     // Check if we have 4 players
@@ -164,8 +168,11 @@ export const startRound = async ({
       sessionId,
       seed,
       trickSuit: null,
+      moveActiveSlot: session.currentActiveSlot,
+      moveCurrentSlot: session.currentActiveSlot,
       currentSuit: "ALL",
       currentMove: 1,
+      currentMoveCards: [],
       playerHands,
       moveWins: {
         TEAM_RED: 0,
@@ -204,6 +211,8 @@ export const startRound = async ({
               sessionId,
               currentRound: session.currentRound,
               activeSlot: session.currentActiveSlot,
+              moveActiveSlot: roundData.moveActiveSlot,
+              moveCurrentSlot: roundData.moveCurrentSlot,
               timestamp: new Date().toISOString(),
             },
           },
@@ -231,6 +240,8 @@ export const startRound = async ({
                   ...decodeCard(cardNum),
                 })),
                 isFirstSet: true,
+                moveActiveSlot: roundData.moveActiveSlot,
+                moveCurrentSlot: roundData.moveCurrentSlot,
                 timestamp: new Date().toISOString(),
               },
             },
@@ -438,6 +449,8 @@ export const handleTrickSuitSelection = async ({
                 })),
                 isFirstSet: false,
                 trickSuit,
+                moveActiveSlot: round.moveActiveSlot,
+                moveCurrentSlot: round.moveCurrentSlot,
                 timestamp: new Date().toISOString(),
               },
             },

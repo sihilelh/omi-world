@@ -10,6 +10,7 @@ import {
   startRound,
   handleTrickSuitSelection,
 } from "../../actions/start-round";
+import { playACard } from "../../actions/play-card";
 
 const dynamoDBClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
@@ -77,6 +78,19 @@ export const handler = async (
           webSocketEndpoint: WEBSOCKET_ENDPOINT,
           trickSuit: body.body.trickSuit,
         });
+
+      case "PLAY_CARD":
+        return await playACard({
+          connectionId: connectionId!,
+          docClient,
+          sessionsTable: SESSIONS_TABLE,
+          roundsTable: ROUNDS_TABLE,
+          moveRecordsTable: MOVES_TABLE,
+          connectionsTable: CONNECTIONS_TABLE,
+          webSocketEndpoint: WEBSOCKET_ENDPOINT,
+          playedCard: body.body.playedCard,
+        });
+
       default:
         return {
           statusCode: 200,

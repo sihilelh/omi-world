@@ -5,10 +5,7 @@ import {
 } from "../utils/auth.util";
 import { CognitoAccessTokenPayload } from "aws-jwt-verify/jwt-model";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  GetCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { cb, cbError } from "../utils/cb.util";
 
 const dynamoDBClient = new DynamoDBClient({});
@@ -158,30 +155,24 @@ const getRound = async (
         return cb(200, {
           roundId,
           sessionId: round.sessionId,
-          status: round.status,
-          trickSuit: round.trickSuit,
-          currentSuit: round.currentSuit || "ALL",
-          currentMove: round.currentMove || 1,
-          currentSlot: session.currentActiveSlot,
           userCards: decodedFirstFourCards, // Only first 4 cards for active player
           userSlot,
-          createdAt: round.createdAt,
-          message: "Active player: You have received your first 4 cards. Select the trick suit to continue.",
+          currentSlot: session.currentActiveSlot,
+          message:
+            "Active player: You have received your first 4 cards. Select the trick suit to continue.",
+          ...round, // Spread all other round fields dynamically
         });
       } else {
         // Non-active players get no cards until trick suit is selected
         return cb(200, {
           roundId,
           sessionId: round.sessionId,
-          status: round.status,
-          trickSuit: round.trickSuit,
-          currentSuit: round.currentSuit || "ALL",
-          currentMove: round.currentMove || 1,
-          currentSlot: session.currentActiveSlot,
           userCards: [], // No cards until trick suit is selected
           userSlot,
-          createdAt: round.createdAt,
-          message: "Waiting for trick suit selection. Cards will be available after trick suit is chosen.",
+          currentSlot: session.currentActiveSlot,
+          message:
+            "Waiting for trick suit selection. Cards will be available after trick suit is chosen.",
+          ...round, // Spread all other round fields dynamically
         });
       }
     }
@@ -190,17 +181,13 @@ const getRound = async (
     return cb(200, {
       roundId,
       sessionId: round.sessionId,
-      status: round.status,
-      trickSuit: round.trickSuit,
-      currentSuit: round.currentSuit || "ALL",
-      currentMove: round.currentMove || 1,
-      currentSlot: session.currentActiveSlot,
       userCards: decodedUserCards,
       userSlot,
-      createdAt: round.createdAt,
+      currentSlot: session.currentActiveSlot,
+      ...round, // Spread all other round fields dynamically
     });
   } catch (error) {
     console.log(`Error getting round:`, error);
     return cbError(500, { error: "Failed to get round" }, { error });
   }
-}; 
+};

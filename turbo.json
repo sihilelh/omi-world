@@ -9,6 +9,11 @@
     "build": {
       "dependsOn": ["type-check"],
       "outputs": ["dist/**"]
+    },
+    "deploy": {
+      "dependsOn": ["build"],
+      "outputs": [],
+      "cache": false
     }
   }
 }

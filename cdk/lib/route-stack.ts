@@ -71,6 +71,7 @@ export class RouteStack extends Stack {
         ],
         allowOrigins: [
           "http://localhost:5173", // Vite dev server
+          "https://play-omi-world.web.app",
         ],
         allowCredentials: true,
       },

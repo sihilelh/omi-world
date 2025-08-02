@@ -6,6 +6,7 @@ interface SessionState {
   sessionData: SessionData | null;
   setSession: (sessionId: string, sessionData: SessionData) => void;
   clearSession: () => void;
+  updateSessionData: (sessionData: SessionData) => void;
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
@@ -13,4 +14,5 @@ export const useSessionStore = create<SessionState>((set) => ({
   sessionData: null,
   setSession: (sessionId, sessionData) => set({ sessionId, sessionData }),
   clearSession: () => set({ sessionId: null, sessionData: null }),
+  updateSessionData: (sessionData) => set({ sessionData }),
 }));

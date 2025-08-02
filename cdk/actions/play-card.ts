@@ -30,11 +30,19 @@ const CARD_VALUES = {
   ACE: 8,
 };
 
-function getCardValue(card: number, trickSuit: string): number {
+function getCardValue(
+  card: number,
+  trickSuit: string,
+  currentSuit: string
+): number {
   const suit = SUIT_SET[Math.floor(card / 8)];
   const cardValue = CARD_SET[card % 8] as keyof typeof CARD_VALUES;
   if (suit === trickSuit) {
     return CARD_VALUES[cardValue] + 8;
+  }
+  // If card suit is not trick or current suit return 0
+  if (suit !== trickSuit && suit !== currentSuit) {
+    return 0;
   }
   return CARD_VALUES[cardValue];
 }
@@ -112,8 +120,8 @@ interface Round {
 
 interface MoveRecord {
   pk: string;
-  playedCards: { [key: number]: number };
-  suit: string;
+  playedCards?: { [key: number]: number };
+  suit?: string;
   wonBy?: "TEAM_RED" | "TEAM_BLACK";
 }
 
@@ -139,7 +147,7 @@ export const playACard = async ({
   const connectionResult = await docClient.send(
     new GetCommand({
       TableName: connectionsTable,
-      Key: { pk: connectionId },
+      Key: { connectionId },
     })
   );
 
@@ -243,23 +251,25 @@ export const playACard = async ({
 
     // Handle the move record
     let moveRecord: MoveRecord;
-    const completedMoveNumber = currentRound.currentMove; // This is the move that will be completed
-    
+    const currentMoveNumber = currentRound.currentMove; // This is the move currently being played
+
+    // Create default moveRecord with only pk
+    moveRecord = {
+      pk: `${currentRound.pk}_move_${currentMoveNumber}`,
+    };
+
     if (currentRound.currentMoveCards.length === 0) {
-      // First card of the move - create new record
-      moveRecord = {
-        pk: `${currentRound.pk}_move_${completedMoveNumber}`,
-        playedCards: {
-          [thisPlayer.slot]: playedCard,
-        },
-        suit: card.suit,
+      // First card of the move - initialize the record
+      moveRecord.playedCards = {
+        [thisPlayer.slot]: playedCard,
       };
+      moveRecord.suit = card.suit;
     } else {
       // Subsequent cards - update existing record
       const moveRecordResult = await docClient.send(
         new GetCommand({
           TableName: moveRecordsTable,
-          Key: { pk: `${currentRound.pk}_move_${completedMoveNumber}` },
+          Key: { pk: `${currentRound.pk}_move_${currentMoveNumber}` },
         })
       );
       if (!moveRecordResult.Item) {
@@ -272,8 +282,13 @@ export const playACard = async ({
         };
       }
       moveRecord = moveRecordResult.Item as MoveRecord;
+      if (!moveRecord.playedCards) {
+        moveRecord.playedCards = {};
+      }
       moveRecord.playedCards[thisPlayer.slot] = playedCard;
     }
+
+    const isFirstMove = currentRound.currentMoveCards.length === 0;
 
     // Check if he is not the first move player, validate the card suit
     if (
@@ -325,6 +340,8 @@ export const playACard = async ({
           card: playedCard,
           slot: thisPlayer.slot,
           currentMove: currentRound.currentMove,
+          isFirstMove,
+          isLastMove: currentRound.currentMoveCards.length === 4,
         },
       },
       sessionId,
@@ -337,7 +354,11 @@ export const playACard = async ({
       const cardsWithValues = currentRound.currentMoveCards.map((card) => {
         return {
           ...card,
-          value: getCardValue(card.card, currentRound.trickSuit),
+          value: getCardValue(
+            card.card,
+            currentRound.trickSuit,
+            currentRound.currentSuit
+          ),
         };
       });
       const highestCard = cardsWithValues.reduce((max, card) => {
@@ -351,6 +372,20 @@ export const playACard = async ({
       currentRound.moveWins[winningTeam] += 1;
       moveRecord.wonBy = winningTeam;
 
+      // Broadcast the move won to all players
+      await broadcastToSession(
+        {
+          action: "MOVE_WON",
+          body: {
+            move: currentRound.currentMove,
+            wonByTeam: winningTeam,
+            wonBySlot: highestCard.slot,
+          },
+        },
+        sessionId,
+        webSocketEndpoint
+      );
+
       // Resetting and updating the current move cards, moves, suit
       currentRound.currentMoveCards = [];
       currentRound.currentMove = currentRound.currentMove + 1;
@@ -359,19 +394,6 @@ export const playACard = async ({
       // Update the move active slot to the winning slot
       currentRound.moveActiveSlot = highestCard.slot;
       currentRound.moveCurrentSlot = highestCard.slot;
-
-      // Broadcast the move won to all players
-      await broadcastToSession(
-        {
-          action: "MOVE_WON",
-          body: {
-            move: currentRound.currentMove,
-            wonBy: winningTeam,
-          },
-        },
-        sessionId,
-        webSocketEndpoint
-      );
     }
 
     // After 8 moves, the round is ended

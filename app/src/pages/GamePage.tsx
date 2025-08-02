@@ -5,14 +5,21 @@ import { useSessionStore } from "../stores/sessionStore";
 import { getSession } from "../services/session.service";
 import { CardTable, ScoreDisplay, PlayerInfo, PlayerHand } from "../components";
 import { PlayCard } from "../components/atoms/PlayCard";
-import { SuitOutline } from "../components/atoms/SuitOutline";
+import {
+  SuitOutline,
+  type SuitTypeValue,
+} from "../components/atoms/SuitOutline";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useWebSocketStore } from "../stores/webSocket.store";
 import { RotateCcw } from "lucide-react";
 import { SessionWaitCard } from "../components/molecules/SessionWaitCard";
 import { useRoundStore } from "../stores/roundStore";
 import { TrickSuitSelect } from "../components/molecules/TrickSuitSelect";
-import { getCardNameByNumber } from "../utils/playCard";
+import {
+  getCardDataByNumber,
+  getCardNameByNumber,
+  getCardNumberByName,
+} from "../utils/playCard";
 import { useAuth } from "../hooks/useAuth";
 import { useGameRound } from "../hooks/useGameRound";
 
@@ -28,16 +35,21 @@ export const GamePage = () => {
     setIsSuitSelectorEnabled,
     currentSlot,
     currentSuit,
-    currentMove,
+    setMyCardSet,
   } = useRoundStore();
   const { handlePageRefreshRestore } = useGameRound();
+  const { currentMoveCards, trickSuit } = useRoundStore();
 
   useEffect(() => {
     fetchSessionData();
   }, [sessionId, setSession]);
 
   useEffect(() => {
-    if (sessionData && sessionData.status === "active" && sessionData.currentRound > 0) {
+    if (
+      sessionData &&
+      sessionData.status === "active" &&
+      sessionData.currentRound > 0
+    ) {
       handlePageRefreshRestore();
     }
   }, [sessionData?.currentRound, handlePageRefreshRestore]);
@@ -66,6 +78,26 @@ export const GamePage = () => {
   const rightPlayer = sessionData?.players.find(
     (player) => player.slot === (mySlot + 1) % 4
   );
+
+  const canIPlayTheCard = (cardNumber: number) => {
+    const { suit } = getCardDataByNumber(cardNumber);
+    if (currentSlot !== mySlot) return false;
+    if (currentSuit === "ALL") return true;
+    if (suit === currentSuit) return true;
+    const doIHaveCurrentSuitCards = myCardSet.some(
+      (c) => getCardDataByNumber(c.number).suit === currentSuit
+    );
+    if (doIHaveCurrentSuitCards === false) {
+      return true;
+    }
+    return false;
+  };
+
+  const PlayerTurnIndicator = () => {
+    return (
+      <div className="w-5 h-5 rounded-full bg-radial from-amber-300 to-amber-500 border-2 border-amber-200" />
+    );
+  };
 
   const GameComponent = () => {
     return (
@@ -119,33 +151,59 @@ export const GamePage = () => {
           <div className="w-full h-full relative">
             {/* Top Players Table Card  */}
             <div className="absolute top-8 left-1/2 -translate-x-1/2">
-              <PlayCard cardType="CLUBS_8" size="sm" />
+              {currentMoveCards
+                .filter((card) => card.slot === topPlayer?.slot)
+                .map((card) => (
+                  <PlayCard
+                    cardType={getCardNameByNumber(card.card)}
+                    size="sm"
+                  />
+                ))}
+              {topPlayer?.slot === currentSlot && <PlayerTurnIndicator />}
             </div>
 
             {/* Right Players Table Card  */}
             <div className="absolute right-8 top-1/2 -translate-y-1/2">
-              <PlayCard
-                cardType="CLUBS_7"
-                size="sm"
-                onClick={() => {
-                  send("START_ROUND");
-                }}
-              />
+              {currentMoveCards
+                .filter((card) => card.slot === rightPlayer?.slot)
+                .map((card) => (
+                  <PlayCard
+                    cardType={getCardNameByNumber(card.card)}
+                    size="sm"
+                  />
+                ))}
+              {rightPlayer?.slot === currentSlot && <PlayerTurnIndicator />}
             </div>
 
             {/* Left Players Table Card  */}
             <div className="absolute left-8 top-1/2 -translate-y-1/2">
-              <PlayCard cardType="CLUBS_7" size="sm" />
+              {currentMoveCards
+                .filter((card) => card.slot === leftPlayer?.slot)
+                .map((card) => (
+                  <PlayCard
+                    cardType={getCardNameByNumber(card.card)}
+                    size="sm"
+                  />
+                ))}
+              {leftPlayer?.slot === currentSlot && <PlayerTurnIndicator />}
             </div>
 
             {/* Bottom Players Table Card  */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-              <PlayCard cardType="CLUBS_7" size="sm" />
+              {currentMoveCards
+                .filter((card) => card.slot === mySlot)
+                .map((card) => (
+                  <PlayCard
+                    cardType={getCardNameByNumber(card.card)}
+                    size="sm"
+                  />
+                ))}
+              {mySlot === currentSlot && <PlayerTurnIndicator />}
             </div>
 
             {/* This Round's Selected Suit  */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <SuitOutline suitType="CLUBS" />
+              <SuitOutline suitType={trickSuit as SuitTypeValue} />
             </div>
           </div>
         </CardTable>
@@ -154,13 +212,19 @@ export const GamePage = () => {
           <PlayerHand
             cards={myCardSet.map((card) => ({
               cardType: getCardNameByNumber(card.number),
-              disabled:
-                mySlot !== currentSlot ||
-                (currentSuit !== "ALL" && card.suit !== currentSuit),
+              disabled: !canIPlayTheCard(card.number),
             }))}
             onCardClick={(cardType) => {
               console.log("Card clicked:", cardType);
+              const cardNumber = getCardNumberByName(cardType);
+
+              // Remove the card from my card set
+              setMyCardSet(myCardSet.filter((c) => c.number !== cardNumber));
+
               // Handle card selection logic here
+              send("PLAY_CARD", {
+                playedCard: cardNumber,
+              });
             }}
             className="flex items-center justify-center gap-4"
           />
@@ -211,16 +275,15 @@ export const GamePage = () => {
         {/* Running session which users can play  */}
         {sessionData &&
           sessionData.status === "active" &&
-          myCardSet.length > 0 &&
           !isSuitSelectorEnabled && <GameComponent />}
 
-        {sessionData &&
-          sessionData.status === "active" &&
-          myCardSet.length === 0 && (
-            <div className="text-white text-2xl font-bold">
-              Waiting for cards ...
-            </div>
-          )}
+        {/* After a round ended, show the round summary modal  */}
+        {sessionData && sessionData.status === "active:round_ended" && (
+          <div>
+            <div>Round Summary</div>
+            <div>Round Summary</div>
+          </div>
+        )}
 
         {isSuitSelectorEnabled && (
           <TrickSuitSelect

@@ -15,3 +15,9 @@ export const getCardNumberByName = (cardName: CardTypeValue): number => {
   const card = cardName.split("_")[1];
   return suitSet.indexOf(suit) * 8 + cardSet.indexOf(card);
 };
+
+export const getCardDataByNumber = (number: number) => {
+  const suit = suitSet[Math.floor(number / 8)];
+  const card = cardSet[number % 8];
+  return { suit, card };
+};

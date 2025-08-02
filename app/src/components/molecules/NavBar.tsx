@@ -16,7 +16,7 @@ export const NavBar = ({ gameMode, redTeam, blueTeam }: NavBarProps) => {
         <div className="text-white text-2xl font-bold ml-4">OmiWorld</div>
       </div>
       {gameMode ? (
-        <ScoreDisplay redTeam={redTeam} blueTeam={blueTeam} />
+        <ScoreDisplay redScore={redTeam || 0} blackScore={blueTeam || 0} />
       ) : (
         <div>
           <Link to="/">About</Link>
@@ -24,4 +24,4 @@ export const NavBar = ({ gameMode, redTeam, blueTeam }: NavBarProps) => {
       )}
     </div>
   );
-}; 
+};

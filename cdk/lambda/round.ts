@@ -152,6 +152,9 @@ const getRound = async (
           ...decodeCard(cardNum),
         }));
 
+        // Remove playerHands to prevent card data leakage
+        const { playerHands, ...roundWithoutHands } = round;
+        
         return cb(200, {
           roundId,
           sessionId: round.sessionId,
@@ -160,10 +163,13 @@ const getRound = async (
           currentSlot: session.currentActiveSlot,
           message:
             "Active player: You have received your first 4 cards. Select the trick suit to continue.",
-          ...round, // Spread all other round fields dynamically
+          ...roundWithoutHands, // Spread all other round fields dynamically
         });
       } else {
         // Non-active players get no cards until trick suit is selected
+        // Remove playerHands to prevent card data leakage
+        const { playerHands, ...roundWithoutHands } = round;
+        
         return cb(200, {
           roundId,
           sessionId: round.sessionId,
@@ -172,19 +178,22 @@ const getRound = async (
           currentSlot: session.currentActiveSlot,
           message:
             "Waiting for trick suit selection. Cards will be available after trick suit is chosen.",
-          ...round, // Spread all other round fields dynamically
+          ...roundWithoutHands, // Spread all other round fields dynamically
         });
       }
     }
 
     // Return round data with only user's cards (for privacy) - only after trick suit is selected
+    // Remove playerHands to prevent card data leakage
+    const { playerHands, ...roundWithoutHands } = round;
+    
     return cb(200, {
       roundId,
       sessionId: round.sessionId,
       userCards: decodedUserCards,
       userSlot,
       currentSlot: session.currentActiveSlot,
-      ...round, // Spread all other round fields dynamically
+      ...roundWithoutHands, // Spread all other round fields dynamically
     });
   } catch (error) {
     console.log(`Error getting round:`, error);

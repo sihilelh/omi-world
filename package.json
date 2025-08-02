@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "type-check": "turbo type-check"
+    "type-check": "turbo type-check",
+    "deploy": "turbo deploy"
   },
   "packageManager": "pnpm@10.12.4",
   "devDependencies": {

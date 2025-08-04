@@ -1,5 +1,5 @@
 import { useSessionStore } from "../stores/sessionStore";
-import { getSession } from "../services/session.service";
+import { getSession, type Team } from "../services/session.service";
 import { toast } from "sonner";
 import { type PlayerCard, useRoundStore } from "../stores/roundStore";
 import { getCardDataByNumber } from "../utils/playCard";
@@ -15,6 +15,7 @@ interface GameStartedBody {
   sessionId: string;
   startedBy: string;
   timestamp: string;
+  sessionStatus: string;
 }
 
 interface ReceiveCardSetBody {
@@ -24,6 +25,7 @@ interface ReceiveCardSetBody {
   cards: PlayerCard[];
   isFirstSet: boolean;
   timestamp: string;
+  sessionStatus: string;
 }
 
 interface TrickSuitSelectedBody {
@@ -32,6 +34,7 @@ interface TrickSuitSelectedBody {
   trickSuit: string;
   selectedBySlot: number;
   timestamp: string;
+  sessionStatus: string;
 }
 
 interface CardPlayedBody {
@@ -40,23 +43,47 @@ interface CardPlayedBody {
   currentMove: number;
   isFirstMove?: boolean;
   isLastMove?: boolean;
+  sessionStatus: string;
 }
 
 interface MoveWonBody {
   move: number;
-  wonBy: "TEAM_RED" | "TEAM_BLACK";
+  wonByTeam: "TEAM_RED" | "TEAM_BLACK";
   wonBySlot: number;
+  sessionStatus: string;
 }
-
 interface RoundWonBody {
   round: number;
   activeSlot: number;
   roundLostTeam: "TEAM_RED" | "TEAM_BLACK" | null;
+  roundWonTeam: "TEAM_RED" | "TEAM_BLACK" | null;
+  teams: Team[];
   isRoundTied: boolean;
+  sessionStatus: string;
+}
+
+interface RoundStartBody {
+  roundId: string;
+  sessionId: string;
+  currentRound: number;
+  activeSlot: number;
+  moveActiveSlot: number;
+  moveCurrentSlot: number;
+  timestamp: string;
+  sessionStatus: string;
 }
 
 export const useOnMessage = () => {
-  const { setSession } = useSessionStore();
+  const {
+    setSession,
+    setStatus,
+    setCurrentActiveSlot,
+    setCurrentRound,
+    setLastRoundWinner,
+    setLastRoundTied,
+    setTeams,
+    updateSessionData,
+  } = useSessionStore();
   const {
     setMyCardSet,
     setTrickSuit,
@@ -74,6 +101,14 @@ export const useOnMessage = () => {
     const data = JSON.parse(event.data);
     const action = data.action;
     const body = data.body;
+
+    // Update session status if it's present in the body
+    const sessionStatus = body.sessionStatus;
+    if (sessionStatus) {
+      console.log("WS:SESSION_STATUS", sessionStatus);
+      setStatus(sessionStatus);
+    }
+
     switch (action) {
       case "health":
         console.log("WS:HEALTH", body);
@@ -86,6 +121,10 @@ export const useOnMessage = () => {
         break;
       case "GAME_START_SUCCESS":
         handleStartRound(ws);
+        break;
+
+      case "ROUND_START":
+        handleRoundStart(body);
         break;
       case "RECEIVE_CARD_SET":
         handleReceiveCardSet(body);
@@ -194,20 +233,25 @@ export const useOnMessage = () => {
 
   const handleMoveWon = async (body: MoveWonBody) => {
     try {
-      const { move, wonBy, wonBySlot } = body;
+      const { move, wonByTeam, wonBySlot } = body;
       setCurrentMove(move);
+
+      toast.success(`Move ${move} won by ${wonByTeam} 🎉`);
+
       // Update move wins
       setMoveWins((prev) => ({
         ...prev,
-        [wonBy]: prev[wonBy] + 1,
+        [wonByTeam]: prev[wonByTeam] + 1,
       }));
       // Update current slot to the winning slot (next move active slot)
       setCurrentSlot(wonBySlot);
+      setCurrentSuit("ALL");
+
       // Clear current move cards
       clearMoveCards();
       // Update current slot to the winning slot (next move active slot)
       // This will be handled by the backend logic
-      console.log(`Move ${move} won by ${wonBy}`);
+      console.log(`Move ${move} won by ${wonByTeam}`);
     } catch (error) {
       console.log("WS:ERROR_MOVE_WON", error);
     }
@@ -215,19 +259,61 @@ export const useOnMessage = () => {
 
   const handleRoundWon = async (body: RoundWonBody) => {
     try {
-      const { round, activeSlot, roundLostTeam, isRoundTied } = body;
+      const {
+        round,
+        activeSlot,
+        roundLostTeam,
+        isRoundTied,
+        roundWonTeam,
+        teams,
+      } = body;
       // Update move active slot
       setMoveActiveSlot(activeSlot);
       // Clear move cards and reset move wins for new round
       clearMoveCards();
       setMoveWins({ TEAM_RED: 0, TEAM_BLACK: 0 });
-      // Update session with new active slot and round info
-      // The session store will be updated by the backend
+
+      // Update session with new active slot and round info using granular methods
+      setCurrentActiveSlot(activeSlot);
+      setCurrentRound(round);
+      setLastRoundTied(isRoundTied);
+      setLastRoundWinner(roundWonTeam);
+      setTeams(teams);
+
       console.log(
-        `Round ${round} completed. Active slot: ${activeSlot}, Lost team: ${roundLostTeam}, Tied: ${isRoundTied}`
+        `Round ${round} completed. Active slot: ${activeSlot}, Lost team: ${roundLostTeam}, Tied: ${isRoundTied}, Won team: ${roundWonTeam}`
       );
     } catch (error) {
       console.log("WS:ERROR_ROUND_WON", error);
+    }
+  };
+
+  const handleRoundStart = async (body: RoundStartBody) => {
+    try {
+      const {
+        roundId,
+        sessionId,
+        currentRound,
+        activeSlot,
+        moveActiveSlot,
+        moveCurrentSlot,
+        sessionStatus,
+      } = body;
+
+      // Update session using granular methods
+      updateSessionData({
+        status: sessionStatus,
+      });
+
+      setCurrentMove(moveCurrentSlot);
+      setMoveActiveSlot(moveActiveSlot);
+      setCurrentSlot(activeSlot);
+      setCurrentSuit("ALL");
+      setMyCardSet([]);
+      setMoveWins({ TEAM_RED: 0, TEAM_BLACK: 0 });
+    } catch (error) {
+      toast.error("Round start but something went wrong");
+      console.log("WS:ERROR_ROUND_START", error);
     }
   };
 

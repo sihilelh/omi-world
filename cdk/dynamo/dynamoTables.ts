@@ -1,10 +1,10 @@
 import { CfnOutput, Stack } from "aws-cdk-lib";
 import { AttributeType, TableV2 } from "aws-cdk-lib/aws-dynamodb";
 
-export const SESSIONS_TABLE_NAME = "OmiWorldSessions";
-export const ROUNDS_TABLE_NAME = "OmiWorldRounds";
-export const MOVES_TABLE_NAME = "OmiWorldMoves";
-export const CONNECTIONS_TABLE_NAME = "WebSocketConnections";
+export const SESSIONS_TABLE_NAME = "OmiWorldAppSessions";
+export const ROUNDS_TABLE_NAME = "OmiWorldAppRounds";
+export const MOVES_TABLE_NAME = "OmiWorldAppMoves";
+export const CONNECTIONS_TABLE_NAME = "OmiWorldAppWebSocketConnections";
 
 export class CreateDynamoDBTables {
   public sessionTable: TableV2;
@@ -38,34 +38,38 @@ export class CreateDynamoDBTables {
   }
 
   private createTables(scope: Stack) {
-    this.sessionTable = new TableV2(scope, "OmiWorldSessions", {
+    this.sessionTable = new TableV2(scope, "OmiWorldAppSessions", {
       partitionKey: {
         name: "pk",
         type: AttributeType.STRING,
       },
     });
 
-    this.roundsTable = new TableV2(scope, "OmiWorldRounds", {
+    this.roundsTable = new TableV2(scope, "OmiWorldAppRounds", {
       partitionKey: {
         name: "pk",
         type: AttributeType.STRING,
       },
     });
 
-    this.movesTable = new TableV2(scope, "OmiWorldMoves", {
+    this.movesTable = new TableV2(scope, "OmiWorldAppMoves", {
       partitionKey: {
         name: "pk",
         type: AttributeType.STRING,
       },
     });
 
-    this.connectionsTable = new TableV2(scope, "WebSocketConnections", {
-      partitionKey: {
-        name: "connectionId",
-        type: AttributeType.STRING,
-      },
-      timeToLiveAttribute: "ttl",
-    });
+    this.connectionsTable = new TableV2(
+      scope,
+      "OmiWorldAppWebSocketConnections",
+      {
+        partitionKey: {
+          name: "connectionId",
+          type: AttributeType.STRING,
+        },
+        timeToLiveAttribute: "ttl",
+      }
+    );
 
     // Add GSI for querying connections by sessionId
     this.connectionsTable.addGlobalSecondaryIndex({

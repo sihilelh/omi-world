@@ -121,6 +121,7 @@ export const startGame = async ({
               sessionId,
               startedBy: userId,
               timestamp: new Date().toISOString(),
+              sessionStatus: session.status,
             },
           },
           sessionId,

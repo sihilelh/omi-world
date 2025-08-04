@@ -279,6 +279,7 @@ const joinSession = async (
               userId: joiningUser,
               team: body.team,
               sessionId,
+              sessionStatus: session.status,
             },
           },
           sessionId,

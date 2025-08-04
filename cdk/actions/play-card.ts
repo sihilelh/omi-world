@@ -80,6 +80,7 @@ interface Session {
   status: string; // Session status (e.g., "active")
   teams: Team[]; // Array of team objects
   lastRoundTied?: boolean; // Is the last round tied
+  lastRoundWinner?: "TEAM_RED" | "TEAM_BLACK"; // The winner of the last round
 }
 
 interface Player {
@@ -201,13 +202,13 @@ export const playACard = async ({
 
   const currentRound = currentRoundResult.Item as Round;
 
-  // Validate round state before allowing card play
-  if (currentRound.status !== "active") {
+  // Validate session state before allowing card play
+  if (session.status !== "active:game_play") {
     return {
       statusCode: 400,
       body: JSON.stringify({
         action: "PLAY_CARD",
-        error: "Round is not in active state",
+        error: "Session is not in active:game_play state",
       }),
     };
   }
@@ -342,6 +343,7 @@ export const playACard = async ({
           currentMove: currentRound.currentMove,
           isFirstMove,
           isLastMove: currentRound.currentMoveCards.length === 4,
+          sessionStatus: session.status,
         },
       },
       sessionId,
@@ -380,6 +382,7 @@ export const playACard = async ({
             move: currentRound.currentMove,
             wonByTeam: winningTeam,
             wonBySlot: highestCard.slot,
+            sessionStatus: session.status,
           },
         },
         sessionId,
@@ -399,7 +402,6 @@ export const playACard = async ({
     // After 8 moves, the round is ended
     if (currentRound.currentMove > 8) {
       // Update the round status and session status to show the round summery modal in frontend
-      currentRound.status = "ended";
       session.status = "active:round_ended";
 
       // Is round score is tied
@@ -412,10 +414,15 @@ export const playACard = async ({
         ? "TEAM_BLACK"
         : "TEAM_RED";
 
+      const roundWonTeam =
+        roundLostTeam === "TEAM_RED" ? "TEAM_BLACK" : "TEAM_RED";
+
       if (isRoundTied) {
         session.lastRoundTied = true;
       } else {
         // Update round wins
+
+        session.lastRoundWinner = roundWonTeam;
 
         if (session.lastRoundTied) {
           session.teams = session.teams.map((team) => {
@@ -472,7 +479,10 @@ export const playACard = async ({
             round: session.currentRound,
             activeSlot: session.currentActiveSlot,
             roundLostTeam,
+            roundWonTeam,
             isRoundTied,
+            teams: session.teams,
+            sessionStatus: session.status,
           },
         },
         sessionId,

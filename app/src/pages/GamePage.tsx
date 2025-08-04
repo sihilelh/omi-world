@@ -3,7 +3,13 @@ import { NavBar } from "../components/molecules/NavBar";
 import { useEffect } from "react";
 import { useSessionStore } from "../stores/sessionStore";
 import { getSession } from "../services/session.service";
-import { CardTable, ScoreDisplay, PlayerInfo, PlayerHand } from "../components";
+import {
+  CardTable,
+  ScoreDisplay,
+  PlayerInfo,
+  PlayerHand,
+  Button,
+} from "../components";
 import { PlayCard } from "../components/atoms/PlayCard";
 import {
   SuitOutline,
@@ -22,10 +28,22 @@ import {
 } from "../utils/playCard";
 import { useAuth } from "../hooks/useAuth";
 import { useGameRound } from "../hooks/useGameRound";
+import { DebugOverlay } from "../components/molecules/DebugOverlay";
 
 export const GamePage = () => {
   const { sessionId } = useParams();
-  const { setSession, sessionData } = useSessionStore();
+  const { 
+    setSession, 
+    sessionId: storeSessionId,
+    status,
+    players,
+    teams,
+    currentActiveSlot,
+    currentRound,
+    lastRoundTied,
+    lastRoundWinner,
+    createdUser
+  } = useSessionStore();
   const { user } = useAuth();
   const { wsConnectionStatus } = useWebSocketStore();
   const { connect, send } = useWebSocket(sessionId);
@@ -37,8 +55,8 @@ export const GamePage = () => {
     currentSuit,
     setMyCardSet,
   } = useRoundStore();
-  const { handlePageRefreshRestore } = useGameRound();
-  const { currentMoveCards, trickSuit } = useRoundStore();
+  const { handlePageRefreshOnly } = useGameRound();
+  const { currentMoveCards, trickSuit, moveWins } = useRoundStore();
 
   useEffect(() => {
     fetchSessionData();
@@ -46,13 +64,13 @@ export const GamePage = () => {
 
   useEffect(() => {
     if (
-      sessionData &&
-      sessionData.status === "active" &&
-      sessionData.currentRound > 0
+      status &&
+      status.includes("active") &&
+      currentRound && currentRound > 0
     ) {
-      handlePageRefreshRestore();
+      handlePageRefreshOnly();
     }
-  }, [sessionData?.currentRound, handlePageRefreshRestore]);
+  }, [currentRound, handlePageRefreshOnly]);
 
   const fetchSessionData = async () => {
     // If sessionId is present in the URL, fetch and store session data
@@ -66,16 +84,16 @@ export const GamePage = () => {
   };
 
   const mySlot =
-    sessionData?.players.find((player) => player.userId === user?.username)
+    players.find((player) => player.userId === user?.username)
       ?.slot || 0;
 
-  const topPlayer = sessionData?.players.find(
+  const topPlayer = players.find(
     (player) => player.slot === (mySlot + 2) % 4
   );
-  const leftPlayer = sessionData?.players.find(
+  const leftPlayer = players.find(
     (player) => player.slot === (mySlot + 3) % 4
   );
-  const rightPlayer = sessionData?.players.find(
+  const rightPlayer = players.find(
     (player) => player.slot === (mySlot + 1) % 4
   );
 
@@ -104,16 +122,31 @@ export const GamePage = () => {
       <>
         {/* Scores  */}
         <div className="absolute right-8 top-4">
-          <ScoreDisplay
-            redScore={
-              sessionData?.teams.find((team) => team.teamId === "TEAM_RED")
-                ?.score || 0
-            }
-            blackScore={
-              sessionData?.teams.find((team) => team.teamId === "TEAM_BLACK")
-                ?.score || 0
-            }
-          />
+          <div className="flex flex-col items-end">
+            <div className="w-max">
+              <ScoreDisplay
+                redScore={
+                  teams.find((team) => team.teamId === "TEAM_RED")
+                    ?.score || 0
+                }
+                blackScore={
+                  teams.find(
+                    (team) => team.teamId === "TEAM_BLACK"
+                  )?.score || 0
+                }
+              />
+            </div>
+            {moveWins && moveWins.TEAM_RED >= 0 && moveWins.TEAM_BLACK >= 0 && (
+              <div className="mt-4 flex flex-col items-end">
+                <div className="text-lg font-bold">Move Wins</div>
+                <div className="bg-neutral-200 rounded-full px-4 py-2 flex items-center gap-2 text-lg font-bold">
+                  <span className="text-red-500">{moveWins.TEAM_RED}</span>{" "}
+                  <span className="text-black">-</span>{" "}
+                  <span className="text-black">{moveWins.TEAM_BLACK}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Other Players  */}
@@ -236,6 +269,7 @@ export const GamePage = () => {
   return (
     <>
       <NavBar />
+      <DebugOverlay />
       <main className="h-[calc(100vh-5rem)] mt-20 relative flex items-center justify-center">
         {/* Connection Status  */}
         <div className="absolute left-8 top-4">
@@ -268,20 +302,93 @@ export const GamePage = () => {
           )}
         </div>
         {/* Active session which users can join  */}
-        {sessionData && sessionData.status === "waiting" && (
+        {status && status === "waiting" && (
           <SessionWaitCard startGame={() => send("GAME_START")} />
         )}
 
+        {/* Select Trick Suit  */}
+        {status &&
+          status === "active:select_trick_suit" &&
+          currentActiveSlot !== null && currentActiveSlot !== mySlot && (
+            <div className="text-center text-2xl font-bold">
+              Wait till{" "}
+              {players.find(
+                (player) => player.slot === currentActiveSlot
+              )?.userId || "other player"}{" "}
+              to select the trick suit
+            </div>
+          )}
+
         {/* Running session which users can play  */}
-        {sessionData &&
-          sessionData.status === "active" &&
-          !isSuitSelectorEnabled && <GameComponent />}
+        {status &&
+          status === "active:game_play" &&
+          trickSuit && <GameComponent />}
+
+        {status &&
+          status === "active" &&
+          currentActiveSlot !== null && currentActiveSlot === mySlot && (
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="text-center text-2xl font-bold">
+                Start the round
+              </div>
+              <Button onClick={() => send("ROUND_START")}>Start Round</Button>
+            </div>
+          )}
+
+        {status &&
+          status === "active" &&
+          currentActiveSlot !== null && currentActiveSlot !== mySlot && (
+            <div className="flex flex-col items-center justify-center gap-4">
+              Wait till the round starts.
+            </div>
+          )}
 
         {/* After a round ended, show the round summary modal  */}
-        {sessionData && sessionData.status === "active:round_ended" && (
+        {status && status === "active:round_ended" && (
           <div>
-            <div>Round Summary</div>
-            <div>Round Summary</div>
+            <div className="text-center text-2xl font-bold mb-4">
+              Round Summary
+            </div>
+
+            {lastRoundTied ? (
+              <>
+                <div className="text-center text-xl font-bold px-6 py-3 bg-gradient-to-r from-black to-red-900 rounded-full">
+                  The round was tied
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center text-xl font-bold px-6 py-3 bg-black rounded-full">
+                  🎉 {lastRoundWinner} won the round
+                </div>
+
+                <div className="mt-4 text-xl text-center">
+                  points deducted from{" "}
+                  <span className="bg-red-500 px-2 rounded-full">
+                    {lastRoundWinner === "TEAM_RED"
+                      ? "team black"
+                      : "team red"}
+                  </span>
+                  .
+                </div>
+              </>
+            )}
+
+            {currentActiveSlot !== null && currentActiveSlot === mySlot ? (
+              <div className="mt-4 text-center">
+                <Button onClick={() => send("ROUND_START")}>
+                  Start Next Round
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-4 text-center text-neutral-400">
+                Wait till the next round starts by{" "}
+                {players.find(
+                  (player) => player.slot === currentActiveSlot
+                )?.userId || "the other player"}
+                .
+              </div>
+            )}
           </div>
         )}
 

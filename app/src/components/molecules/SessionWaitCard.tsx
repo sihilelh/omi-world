@@ -6,13 +6,18 @@ import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuth";
 
 export const SessionWaitCard = ({ startGame }: { startGame: () => void }) => {
-  const { sessionData } = useSessionStore();
+  const { 
+    sessionId,
+    players,
+    createdUser,
+    status
+  } = useSessionStore();
   const { user } = useAuth();
   const getTeamSlots = () => {
     const redPlayers =
-      sessionData?.players.filter((p) => p.team === "TEAM_RED") || [];
+      players.filter((p) => p.team === "TEAM_RED") || [];
     const blackPlayers =
-      sessionData?.players.filter((p) => p.team === "TEAM_BLACK") || [];
+      players.filter((p) => p.team === "TEAM_BLACK") || [];
 
     return {
       red: {
@@ -27,13 +32,13 @@ export const SessionWaitCard = ({ startGame }: { startGame: () => void }) => {
   };
 
   const slots = getTeamSlots();
-  const totalPlayers = sessionData?.players.length || 0;
+  const totalPlayers = players.length || 0;
   const maxPlayers = 4;
   const playersNeeded = maxPlayers - totalPlayers;
 
   const handleCopyInviteLink = () => {
     navigator.clipboard.writeText(
-      `${window.location.origin}/join/${sessionData?.pk}`
+      `${window.location.origin}/join/${sessionId}`
     );
     toast.success("Invite link copied to clipboard");
   };
@@ -58,7 +63,7 @@ export const SessionWaitCard = ({ startGame }: { startGame: () => void }) => {
             Waiting for Players
           </h1>
           <p className="text-neutral-400">
-            Session: {sessionData?.pk || "Loading..."}
+            Session: {sessionId || "Loading..."}
           </p>
           <div className="mt-4">
             <Button className="w-full" onClick={handleCopyInviteLink}>
@@ -189,19 +194,19 @@ export const SessionWaitCard = ({ startGame }: { startGame: () => void }) => {
         </div>
 
         {/* Session Info */}
-        {sessionData && (
+        {sessionId && (
           <div className="mt-6 p-4 bg-neutral-800/50 rounded-lg">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-neutral-400">Created by:</span>
                 <div className="text-neutral-200 font-medium">
-                  {sessionData.createdUser}
+                  {createdUser}
                 </div>
               </div>
               <div>
                 <span className="text-neutral-400">Status:</span>
                 <div className="text-neutral-200 font-medium">
-                  {sessionData.status}
+                  {status}
                 </div>
               </div>
             </div>
@@ -209,7 +214,7 @@ export const SessionWaitCard = ({ startGame }: { startGame: () => void }) => {
         )}
 
         {/* Loading Animation */}
-        {sessionData?.players.length !== 4 && (
+        {players.length !== 4 && (
           <div className="mt-6 text-center">
             <motion.div
               className="inline-flex items-center gap-2 text-neutral-400"
@@ -222,16 +227,16 @@ export const SessionWaitCard = ({ startGame }: { startGame: () => void }) => {
             </motion.div>
           </div>
         )}
-        {sessionData?.players.length === 4 &&
-          sessionData.createdUser === user?.username && (
+        {players.length === 4 &&
+          createdUser === user?.username && (
             <div className="mt-6 text-center">
               <Button className="w-full" onClick={handleStartGame}>
                 Start Game
               </Button>
             </div>
           )}
-        {sessionData?.players.length === 4 &&
-          sessionData.createdUser !== user?.username && (
+        {players.length === 4 &&
+          createdUser !== user?.username && (
             <div className="mt-6 text-center">
               Wait until the host starts the game
             </div>

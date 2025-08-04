@@ -143,7 +143,7 @@ const getRound = async (
     }));
 
     // Check if round is in waiting_for_trick_suit status
-    if (round.status === "waiting_for_trick_suit") {
+    if (session.status === "active:select_trick_suit") {
       // If user is the active player, give them first 4 cards
       if (userSlot === session.currentActiveSlot) {
         const firstFourCards = userCards.slice(0, 4);
@@ -154,7 +154,7 @@ const getRound = async (
 
         // Remove playerHands to prevent card data leakage
         const { playerHands, ...roundWithoutHands } = round;
-        
+
         return cb(200, {
           roundId,
           sessionId: round.sessionId,
@@ -169,7 +169,7 @@ const getRound = async (
         // Non-active players get no cards until trick suit is selected
         // Remove playerHands to prevent card data leakage
         const { playerHands, ...roundWithoutHands } = round;
-        
+
         return cb(200, {
           roundId,
           sessionId: round.sessionId,
@@ -186,7 +186,7 @@ const getRound = async (
     // Return round data with only user's cards (for privacy) - only after trick suit is selected
     // Remove playerHands to prevent card data leakage
     const { playerHands, ...roundWithoutHands } = round;
-    
+
     return cb(200, {
       roundId,
       sessionId: round.sessionId,

@@ -131,7 +131,7 @@ export const startRound = async ({
     const session = sessionResult.Item;
 
     // Check if session is active
-    if (session.status !== "active" && session.status !== "active:hold") {
+    if (!session.status.startsWith("active")) {
       return {
         statusCode: 400,
         body: JSON.stringify({
@@ -140,9 +140,7 @@ export const startRound = async ({
       };
     }
 
-    if (session.status === "active:hold") {
-      session.status = "active";
-    }
+    session.status = "active:select_trick_suit";
 
     // Check if we have 4 players
     if (session.players.length !== 4) {
@@ -178,26 +176,11 @@ export const startRound = async ({
         TEAM_RED: 0,
         TEAM_BLACK: 0,
       },
-      status: "waiting_for_trick_suit",
       createdAt: new Date().toISOString(),
     };
 
-    // Save round to DynamoDB
-    await docClient.send(
-      new PutCommand({
-        TableName: roundsTable,
-        Item: roundData,
-      })
-    );
-
     // Update session with new round number
     session.currentRound += 1;
-    await docClient.send(
-      new PutCommand({
-        TableName: sessionsTable,
-        Item: session,
-      })
-    );
 
     // Broadcast round start message to all players
     if (webSocketEndpoint) {
@@ -214,6 +197,7 @@ export const startRound = async ({
               moveActiveSlot: roundData.moveActiveSlot,
               moveCurrentSlot: roundData.moveCurrentSlot,
               timestamp: new Date().toISOString(),
+              sessionStatus: session.status,
             },
           },
           sessionId,
@@ -234,6 +218,7 @@ export const startRound = async ({
               body: {
                 roundId,
                 sessionId,
+                sessionStatus: session.status,
                 playerSlot: activePlayer.slot,
                 cards: firstFourCards.map((cardNum) => ({
                   number: cardNum,
@@ -266,6 +251,22 @@ export const startRound = async ({
     } else {
       console.warn("Start Round Action - WebSocket endpoint not configured");
     }
+
+    // Save round to DynamoDB
+    await docClient.send(
+      new PutCommand({
+        TableName: roundsTable,
+        Item: roundData,
+      })
+    );
+
+    // Update session with new round number
+    await docClient.send(
+      new PutCommand({
+        TableName: sessionsTable,
+        Item: session,
+      })
+    );
 
     return {
       statusCode: 200,
@@ -368,7 +369,7 @@ export const handleTrickSuitSelection = async ({
     const round = roundResult.Item;
 
     // Check if round is waiting for trick suit
-    if (round.status !== "waiting_for_trick_suit") {
+    if (session.status !== "active:select_trick_suit") {
       return {
         statusCode: 400,
         body: JSON.stringify({
@@ -404,12 +405,20 @@ export const handleTrickSuitSelection = async ({
 
     // Update round with trick suit
     round.trickSuit = trickSuit;
-    round.status = "active";
+    // Update session status to active:game_play
+    session.status = "active:game_play";
 
     await docClient.send(
       new PutCommand({
         TableName: roundsTable,
         Item: round,
+      })
+    );
+
+    await docClient.send(
+      new PutCommand({
+        TableName: sessionsTable,
+        Item: session,
       })
     );
 
@@ -426,6 +435,7 @@ export const handleTrickSuitSelection = async ({
               trickSuit,
               selectedBySlot: session.currentActiveSlot,
               timestamp: new Date().toISOString(),
+              sessionStatus: session.status,
             },
           },
           sessionId,
@@ -451,6 +461,7 @@ export const handleTrickSuitSelection = async ({
                 trickSuit,
                 moveActiveSlot: round.moveActiveSlot,
                 moveCurrentSlot: round.moveCurrentSlot,
+                sessionStatus: session.status,
                 timestamp: new Date().toISOString(),
               },
             },

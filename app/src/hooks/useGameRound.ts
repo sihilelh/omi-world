@@ -16,25 +16,23 @@ export const useGameRound = () => {
     setCurrentMoveCards,
     setMoveWins,
   } = useRoundStore();
-  const { sessionData } = useSessionStore();
+  const { sessionId, status, currentRound } = useSessionStore();
 
   const handlePageRefreshRestore = useCallback(async () => {
-    if (
-      !sessionData ||
-      sessionData.status !== "active" ||
-      sessionData.currentRound === 0
-    ) {
+    if (!sessionId || !currentRound || currentRound === 0) {
       return;
     }
 
     try {
-      const roundId = `${sessionData.pk}_round_${sessionData.currentRound}`;
+      const roundId = `${sessionId}_round_${currentRound}`;
       const roundData = await getRound(roundId);
 
       if (roundData) {
         // Restore round state
         setCurrentSlot(roundData.moveCurrentSlot || 0); // Use moveCurrentSlot from backend
-        setCurrentSuit((roundData.currentSuit as "ALL" | SuitTypeValue) || "ALL");
+        setCurrentSuit(
+          (roundData.currentSuit as "ALL" | SuitTypeValue) || "ALL"
+        );
         setTrickSuit(roundData.trickSuit || "");
         setCurrentMove(roundData.currentMove || 1);
         setMoveActiveSlot(roundData.moveActiveSlot || 0);
@@ -42,15 +40,18 @@ export const useGameRound = () => {
         setMoveWins(roundData.moveWins || { TEAM_RED: 0, TEAM_BLACK: 0 });
 
         // Restore cards based on round status
-        if (roundData.status === "active") {
+        if (status === "active:game_play") {
           // Full 8 cards after trick suit is selected
           setMyCardSet(roundData.userCards || []);
           setIsSuitSelectorEnabled(false); // Trick suit already selected
-        } else if (roundData.status === "waiting_for_trick_suit") {
+        } else if (status === "active:select_trick_suit") {
           // First 4 cards for active player, no cards for others
           setMyCardSet(roundData.userCards || []);
           // Enable suit selector if user has 4 cards and is the active slot
-          if (roundData.userCards.length === 4 && roundData.userSlot === roundData.moveActiveSlot) {
+          if (
+            roundData.userCards.length === 4 &&
+            roundData.userSlot === roundData.moveActiveSlot
+          ) {
             setIsSuitSelectorEnabled(true);
           } else {
             setIsSuitSelectorEnabled(false);
@@ -65,7 +66,9 @@ export const useGameRound = () => {
       console.error("Failed to restore round data:", error);
     }
   }, [
-    sessionData,
+    sessionId,
+    status,
+    currentRound,
     setMyCardSet,
     setCurrentSlot,
     setCurrentSuit,
@@ -76,5 +79,70 @@ export const useGameRound = () => {
     setMoveWins,
   ]);
 
-  return { handlePageRefreshRestore };
+  // Add a separate function for page refresh restoration that doesn't interfere with active gameplay
+  const handlePageRefreshOnly = useCallback(async () => {
+    if (!sessionId || !currentRound || currentRound === 0) {
+      return;
+    }
+
+    try {
+      const roundId = `${sessionId}_round_${currentRound}`;
+      const roundData = await getRound(roundId);
+
+      if (roundData) {
+        // Only restore if we don't have cards yet (indicating a fresh page load)
+        const { myCardSet } = useRoundStore.getState();
+        if (myCardSet.length > 0) {
+          // Don't restore if we already have cards (active gameplay)
+          return;
+        }
+
+        // Restore round state
+        setCurrentSlot(roundData.moveCurrentSlot || 0);
+        setCurrentSuit(
+          (roundData.currentSuit as "ALL" | SuitTypeValue) || "ALL"
+        );
+        setTrickSuit(roundData.trickSuit || "");
+        setCurrentMove(roundData.currentMove || 1);
+        setMoveActiveSlot(roundData.moveActiveSlot || 0);
+        setCurrentMoveCards(roundData.currentMoveCards || []);
+        setMoveWins(roundData.moveWins || { TEAM_RED: 0, TEAM_BLACK: 0 });
+
+        // Restore cards based on round status
+        if (status === "active:game_play") {
+          setMyCardSet(roundData.userCards || []);
+          setIsSuitSelectorEnabled(false);
+        } else if (status === "active:select_trick_suit") {
+          setMyCardSet(roundData.userCards || []);
+          if (
+            roundData.userCards.length === 4 &&
+            roundData.userSlot === roundData.moveActiveSlot
+          ) {
+            setIsSuitSelectorEnabled(true);
+          } else {
+            setIsSuitSelectorEnabled(false);
+          }
+        } else {
+          setMyCardSet([]);
+          setIsSuitSelectorEnabled(false);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to restore round data:", error);
+    }
+  }, [
+    sessionId,
+    status,
+    currentRound,
+    setMyCardSet,
+    setCurrentSlot,
+    setCurrentSuit,
+    setTrickSuit,
+    setCurrentMove,
+    setMoveActiveSlot,
+    setCurrentMoveCards,
+    setMoveWins,
+  ]);
+
+  return { handlePageRefreshRestore, handlePageRefreshOnly };
 };

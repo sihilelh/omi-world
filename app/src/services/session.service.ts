@@ -21,6 +21,8 @@ export interface SessionData {
   currentRound: number;
   teams: Array<Team>;
   players: Array<Player>;
+  lastRoundTied?: boolean;
+  lastRoundWinner?: "TEAM_RED" | "TEAM_BLACK";
 }
 
 export interface CreateSessionResponse {

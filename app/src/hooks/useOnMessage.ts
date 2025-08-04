@@ -290,15 +290,8 @@ export const useOnMessage = () => {
 
   const handleRoundStart = async (body: RoundStartBody) => {
     try {
-      const {
-        roundId,
-        sessionId,
-        currentRound,
-        activeSlot,
-        moveActiveSlot,
-        moveCurrentSlot,
-        sessionStatus,
-      } = body;
+      const { activeSlot, moveActiveSlot, moveCurrentSlot, sessionStatus } =
+        body;
 
       // Update session using granular methods
       updateSessionData({

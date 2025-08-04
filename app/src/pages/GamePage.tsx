@@ -32,9 +32,8 @@ import { DebugOverlay } from "../components/molecules/DebugOverlay";
 
 export const GamePage = () => {
   const { sessionId } = useParams();
-  const { 
-    setSession, 
-    sessionId: storeSessionId,
+  const {
+    setSession,
     status,
     players,
     teams,
@@ -42,7 +41,6 @@ export const GamePage = () => {
     currentRound,
     lastRoundTied,
     lastRoundWinner,
-    createdUser
   } = useSessionStore();
   const { user } = useAuth();
   const { wsConnectionStatus } = useWebSocketStore();
@@ -66,7 +64,8 @@ export const GamePage = () => {
     if (
       status &&
       status.includes("active") &&
-      currentRound && currentRound > 0
+      currentRound &&
+      currentRound > 0
     ) {
       handlePageRefreshOnly();
     }
@@ -84,15 +83,10 @@ export const GamePage = () => {
   };
 
   const mySlot =
-    players.find((player) => player.userId === user?.username)
-      ?.slot || 0;
+    players.find((player) => player.userId === user?.username)?.slot || 0;
 
-  const topPlayer = players.find(
-    (player) => player.slot === (mySlot + 2) % 4
-  );
-  const leftPlayer = players.find(
-    (player) => player.slot === (mySlot + 3) % 4
-  );
+  const topPlayer = players.find((player) => player.slot === (mySlot + 2) % 4);
+  const leftPlayer = players.find((player) => player.slot === (mySlot + 3) % 4);
   const rightPlayer = players.find(
     (player) => player.slot === (mySlot + 1) % 4
   );
@@ -126,13 +120,10 @@ export const GamePage = () => {
             <div className="w-max">
               <ScoreDisplay
                 redScore={
-                  teams.find((team) => team.teamId === "TEAM_RED")
-                    ?.score || 0
+                  teams.find((team) => team.teamId === "TEAM_RED")?.score || 0
                 }
                 blackScore={
-                  teams.find(
-                    (team) => team.teamId === "TEAM_BLACK"
-                  )?.score || 0
+                  teams.find((team) => team.teamId === "TEAM_BLACK")?.score || 0
                 }
               />
             </div>
@@ -309,24 +300,25 @@ export const GamePage = () => {
         {/* Select Trick Suit  */}
         {status &&
           status === "active:select_trick_suit" &&
-          currentActiveSlot !== null && currentActiveSlot !== mySlot && (
+          currentActiveSlot !== null &&
+          currentActiveSlot !== mySlot && (
             <div className="text-center text-2xl font-bold">
               Wait till{" "}
-              {players.find(
-                (player) => player.slot === currentActiveSlot
-              )?.userId || "other player"}{" "}
+              {players.find((player) => player.slot === currentActiveSlot)
+                ?.userId || "other player"}{" "}
               to select the trick suit
             </div>
           )}
 
         {/* Running session which users can play  */}
-        {status &&
-          status === "active:game_play" &&
-          trickSuit && <GameComponent />}
+        {status && status === "active:game_play" && trickSuit && (
+          <GameComponent />
+        )}
 
         {status &&
           status === "active" &&
-          currentActiveSlot !== null && currentActiveSlot === mySlot && (
+          currentActiveSlot !== null &&
+          currentActiveSlot === mySlot && (
             <div className="flex flex-col items-center justify-center gap-4">
               <div className="text-center text-2xl font-bold">
                 Start the round
@@ -337,7 +329,8 @@ export const GamePage = () => {
 
         {status &&
           status === "active" &&
-          currentActiveSlot !== null && currentActiveSlot !== mySlot && (
+          currentActiveSlot !== null &&
+          currentActiveSlot !== mySlot && (
             <div className="flex flex-col items-center justify-center gap-4">
               Wait till the round starts.
             </div>
@@ -365,9 +358,7 @@ export const GamePage = () => {
                 <div className="mt-4 text-xl text-center">
                   points deducted from{" "}
                   <span className="bg-red-500 px-2 rounded-full">
-                    {lastRoundWinner === "TEAM_RED"
-                      ? "team black"
-                      : "team red"}
+                    {lastRoundWinner === "TEAM_RED" ? "team black" : "team red"}
                   </span>
                   .
                 </div>
@@ -383,9 +374,8 @@ export const GamePage = () => {
             ) : (
               <div className="mt-4 text-center text-neutral-400">
                 Wait till the next round starts by{" "}
-                {players.find(
-                  (player) => player.slot === currentActiveSlot
-                )?.userId || "the other player"}
+                {players.find((player) => player.slot === currentActiveSlot)
+                  ?.userId || "the other player"}
                 .
               </div>
             )}

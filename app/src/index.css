@@ -2,8 +2,12 @@
 
 @layer base {
   html {
-    font-family: 'Cinzel', serif;
+    font-family: "Cinzel", serif;
   }
+}
+
+input {
+  font-family: "Consolas", monospace;
 }
 
 body {

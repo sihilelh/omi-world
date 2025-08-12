@@ -14,6 +14,15 @@ interface SessionState {
   lastRoundTied: boolean | null;
   lastRoundWinner: "TEAM_RED" | "TEAM_BLACK" | null;
 
+  // Game ended properties
+  winnerTeam: "TEAM_RED" | "TEAM_BLACK" | null;
+  allRoundsWins: {
+    moveWins: { TEAM_RED: number; TEAM_BLACK: number };
+    isRoundTied: boolean;
+    roundWonTeam: "TEAM_RED" | "TEAM_BLACK";
+    roundLostTeam: "TEAM_RED" | "TEAM_BLACK";
+  }[];
+
   // Individual setter methods
   setSessionId: (sessionId: string) => void;
   setStatus: (status: string) => void;
@@ -24,7 +33,20 @@ interface SessionState {
   setPlayers: (players: Player[]) => void;
   setTeams: (teams: Team[]) => void;
   setLastRoundTied: (lastRoundTied: boolean) => void;
-  setLastRoundWinner: (lastRoundWinner: "TEAM_RED" | "TEAM_BLACK" | null) => void;
+  setLastRoundWinner: (
+    lastRoundWinner: "TEAM_RED" | "TEAM_BLACK" | null
+  ) => void;
+
+  // Game ended setters
+  setWinnerTeam: (winnerTeam: "TEAM_RED" | "TEAM_BLACK" | null) => void;
+  setAllRoundsWins: (
+    allRoundsWins: {
+      moveWins: { TEAM_RED: number; TEAM_BLACK: number };
+      isRoundTied: boolean;
+      roundWonTeam: "TEAM_RED" | "TEAM_BLACK";
+      roundLostTeam: "TEAM_RED" | "TEAM_BLACK";
+    }[]
+  ) => void;
 
   // Bulk update methods
   setSession: (sessionId: string, sessionData: SessionData) => void;
@@ -48,6 +70,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   lastRoundTied: null,
   lastRoundWinner: null,
 
+  // Game ended state
+  winnerTeam: null,
+  allRoundsWins: [],
+
   // Individual setters
   setSessionId: (sessionId) => set({ sessionId }),
   setStatus: (status) => set({ status }),
@@ -59,6 +85,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   setTeams: (teams) => set({ teams }),
   setLastRoundTied: (lastRoundTied) => set({ lastRoundTied }),
   setLastRoundWinner: (lastRoundWinner) => set({ lastRoundWinner }),
+
+  // Game ended setters
+  setWinnerTeam: (winnerTeam) => set({ winnerTeam }),
+  setAllRoundsWins: (allRoundsWins) => set({ allRoundsWins }),
 
   // Bulk update methods
   setSession: (sessionId, sessionData) => {
@@ -80,35 +110,52 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set((state) => ({
       ...state,
       ...(sessionData.status !== undefined && { status: sessionData.status }),
-      ...(sessionData.createdAt !== undefined && { createdAt: sessionData.createdAt }),
-      ...(sessionData.createdUser !== undefined && { createdUser: sessionData.createdUser }),
-      ...(sessionData.currentActiveSlot !== undefined && { currentActiveSlot: sessionData.currentActiveSlot }),
-      ...(sessionData.currentRound !== undefined && { currentRound: sessionData.currentRound }),
-      ...(sessionData.players !== undefined && { players: sessionData.players }),
+      ...(sessionData.createdAt !== undefined && {
+        createdAt: sessionData.createdAt,
+      }),
+      ...(sessionData.createdUser !== undefined && {
+        createdUser: sessionData.createdUser,
+      }),
+      ...(sessionData.currentActiveSlot !== undefined && {
+        currentActiveSlot: sessionData.currentActiveSlot,
+      }),
+      ...(sessionData.currentRound !== undefined && {
+        currentRound: sessionData.currentRound,
+      }),
+      ...(sessionData.players !== undefined && {
+        players: sessionData.players,
+      }),
       ...(sessionData.teams !== undefined && { teams: sessionData.teams }),
-      ...(sessionData.lastRoundTied !== undefined && { lastRoundTied: sessionData.lastRoundTied }),
-      ...(sessionData.lastRoundWinner !== undefined && { lastRoundWinner: sessionData.lastRoundWinner }),
+      ...(sessionData.lastRoundTied !== undefined && {
+        lastRoundTied: sessionData.lastRoundTied,
+      }),
+      ...(sessionData.lastRoundWinner !== undefined && {
+        lastRoundWinner: sessionData.lastRoundWinner,
+      }),
     }));
   },
 
-  clearSession: () => set({
-    sessionId: null,
-    status: null,
-    createdAt: null,
-    createdUser: null,
-    currentActiveSlot: null,
-    currentRound: null,
-    players: [],
-    teams: [],
-    lastRoundTied: null,
-    lastRoundWinner: null,
-  }),
+  clearSession: () =>
+    set({
+      sessionId: null,
+      status: null,
+      createdAt: null,
+      createdUser: null,
+      currentActiveSlot: null,
+      currentRound: null,
+      players: [],
+      teams: [],
+      lastRoundTied: null,
+      lastRoundWinner: null,
+      winnerTeam: null,
+      allRoundsWins: [],
+    }),
 
   // Computed getter for backward compatibility
   get sessionData() {
     const state = get();
     if (!state.sessionId) return null;
-    
+
     return {
       pk: state.sessionId,
       createdAt: state.createdAt!,

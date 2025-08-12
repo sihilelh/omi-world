@@ -4,6 +4,7 @@ import {
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
+  ScanCommand,
   TransactWriteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { SUIT_SET, CARD_SET, decodeCard } from "./start-round";
@@ -399,8 +400,12 @@ export const playACard = async ({
       currentRound.moveCurrentSlot = highestCard.slot;
     }
 
+    // Check for session end by checking if any team has below 0 score
+    // This used in the game ended card
+    const isSessionEnded = session.teams.some((team) => team.score < 0);
+
     // After 8 moves, the round is ended
-    if (currentRound.currentMove > 8) {
+    if (currentRound.currentMove > 8 && !isSessionEnded) {
       // Update the round status and session status to show the round summery modal in frontend
       session.status = "active:round_ended";
 
@@ -483,6 +488,60 @@ export const playACard = async ({
             isRoundTied,
             teams: session.teams,
             sessionStatus: session.status,
+          },
+        },
+        sessionId,
+        webSocketEndpoint
+      );
+    }
+
+    if (isSessionEnded) {
+      session.status = "active:game_ended";
+      const winnerTeam = session.teams.find((team) => team.score > 0)?.teamId;
+
+      // If team score is below 0 make it 0
+      session.teams = session.teams.map((team) => {
+        if (team.score < 0) {
+          team.score = 0;
+        }
+        return team;
+      });
+
+      // TODO: Get all round data and wins, send it to the frontend
+      const allRounds = await docClient.send(
+        new ScanCommand({
+          TableName: roundsTable,
+          FilterExpression: "sessionId = :sessionId",
+          ExpressionAttributeValues: {
+            ":sessionId": sessionId,
+          },
+        })
+      );
+      const allRoundsData = allRounds.Items as Round[];
+      const allRoundsWins = allRoundsData.map((r) => {
+        return {
+          moveWins: r.moveWins,
+          isRoundTied: r.moveWins.TEAM_BLACK === r.moveWins.TEAM_RED,
+          roundWonTeam:
+            r.moveWins.TEAM_BLACK < r.moveWins.TEAM_RED
+              ? "TEAM_BLACK"
+              : "TEAM_RED",
+          roundLostTeam:
+            r.moveWins.TEAM_BLACK < r.moveWins.TEAM_RED
+              ? "TEAM_RED"
+              : "TEAM_BLACK",
+        };
+      });
+
+      await broadcastToSession(
+        {
+          action: "GAME_ENDED",
+          body: {
+            teams: session.teams,
+            sessionStatus: session.status,
+            winnerTeam,
+            allRoundsWins,
+            sessionData: session,
           },
         },
         sessionId,

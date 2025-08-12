@@ -1,5 +1,9 @@
 import { useSessionStore } from "../stores/sessionStore";
-import { getSession, type Team } from "../services/session.service";
+import {
+  getSession,
+  type SessionData,
+  type Team,
+} from "../services/session.service";
 import { toast } from "sonner";
 import { type PlayerCard, useRoundStore } from "../stores/roundStore";
 import { getCardDataByNumber } from "../utils/playCard";
@@ -73,6 +77,19 @@ interface RoundStartBody {
   sessionStatus: string;
 }
 
+interface GameEndedBody {
+  teams: Team[];
+  sessionStatus: string;
+  winnerTeam: "TEAM_RED" | "TEAM_BLACK";
+  allRoundsWins: {
+    moveWins: { TEAM_RED: number; TEAM_BLACK: number };
+    isRoundTied: boolean;
+    roundWonTeam: "TEAM_RED" | "TEAM_BLACK";
+    roundLostTeam: "TEAM_RED" | "TEAM_BLACK";
+  }[];
+  sessionData: SessionData;
+}
+
 export const useOnMessage = () => {
   const {
     setSession,
@@ -83,6 +100,8 @@ export const useOnMessage = () => {
     setLastRoundTied,
     setTeams,
     updateSessionData,
+    setWinnerTeam,
+    setAllRoundsWins,
   } = useSessionStore();
   const {
     setMyCardSet,
@@ -140,6 +159,10 @@ export const useOnMessage = () => {
         break;
       case "ROUND_WON":
         handleRoundWon(body);
+        break;
+
+      case "GAME_ENDED":
+        handleGameEnded(body);
         break;
 
       default:
@@ -307,6 +330,21 @@ export const useOnMessage = () => {
     } catch (error) {
       toast.error("Round start but something went wrong");
       console.log("WS:ERROR_ROUND_START", error);
+    }
+  };
+
+  const handleGameEnded = async (body: GameEndedBody) => {
+    try {
+      const { teams, sessionStatus, winnerTeam, allRoundsWins, sessionData } =
+        body;
+      setSession(sessionData.pk, sessionData);
+      setTeams(teams);
+      setStatus(sessionStatus);
+      setWinnerTeam(winnerTeam);
+      setAllRoundsWins(allRoundsWins);
+    } catch (error) {
+      toast.error("Game ended but something went wrong");
+      console.log("WS:ERROR_GAME_ENDED", error);
     }
   };
 

@@ -6,11 +6,17 @@ import { LobbyPage } from "./pages/LobbyPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GamePage } from "./pages/GamePage";
 import { JoinPage } from "./pages/JoinPage";
+import { AboutPage } from "./pages/AboutPage";
+import { HomeRoute } from "./components/HomeRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/" element={<HomeRoute />} />
+        
         {/* Auth Routes */}
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signup" element={<SignUpPage />} />
@@ -21,7 +27,6 @@ function App() {
           <Route path="/lobby" element={<LobbyPage />} />
           <Route path="/join/:sessionId" element={<JoinPage />} />
           <Route path="/game/:sessionId" element={<GamePage />} />
-          <Route path="/" element={<Navigate to="/lobby" replace />} />
           <Route path="*" element={<Navigate to="/lobby" replace />} />
         </Route>
       </Routes>

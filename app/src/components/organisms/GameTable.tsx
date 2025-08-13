@@ -31,11 +31,12 @@ export const GameTable = ({
   currentSlot,
   currentMoveCards,
   trickSuit,
-  onCardClick,
 }: GameTableProps) => {
   const topPlayer = players.find((player) => player.slot === (mySlot + 2) % 4);
   const leftPlayer = players.find((player) => player.slot === (mySlot + 3) % 4);
-  const rightPlayer = players.find((player) => player.slot === (mySlot + 1) % 4);
+  const rightPlayer = players.find(
+    (player) => player.slot === (mySlot + 1) % 4
+  );
 
   return (
     <>
@@ -136,4 +137,4 @@ export const GameTable = ({
       </CardTable>
     </>
   );
-}; 
+};
